@@ -2363,20 +2363,18 @@ Error generating stack: `+l.message+`
         if(!candidates.includes('https://www.youtube.com/s/desktop/12d6b690/img/favicon_32x32.png'))
           candidates.push('https://www.youtube.com/s/desktop/12d6b690/img/favicon_32x32.png');
       }
-      // domain_url preserves path and gives better result for Google apps and many SPAs
+      // FIX: Prioritaskan DuckDuckGo & direct favicon dulu, baru s2, agar tidak terjebak generic s2
+      candidates.push('https://icons.duckduckgo.com/ip3/'+host+'.ico');
+      candidates.push('https://'+host+'/favicon.ico');
       candidates.push('https://www.google.com/s2/favicons?domain_url='+encodeURIComponent(u.href)+'&sz=64');
       candidates.push('https://www.google.com/s2/favicons?domain='+host+'&sz=64');
-      // direct favicon fallback
-      candidates.push('https://'+host+'/favicon.ico');
-      // DuckDuckGo as last resort (often has higher res)
-      candidates.push('https://icons.duckduckgo.com/ip3/'+host+'.ico');
       if(window.GENERIC_FALLBACK_ICON) candidates.push(window.GENERIC_FALLBACK_ICON);
       return candidates;
     }catch(e){
       try{
         const host = url.split('/')[0].toLowerCase();
         if(PRODUCT_ICON_MAP[host]) return [PRODUCT_ICON_MAP[host]];
-        return ['https://www.google.com/s2/favicons?domain='+host+'&sz=64'];
+        return ['https://icons.duckduckgo.com/ip3/'+host+'.ico', 'https://'+host+'/favicon.ico', 'https://www.google.com/s2/favicons?domain='+host+'&sz=64'];
       }catch{ return []; }
     }
   }
@@ -3008,9 +3006,7 @@ function initMotiv(){
       if(!it || typeof it.text!=='string' || !it.text.trim()) return {ok:false, msg:'Item '+(i+1)+': teks wajib'};
       if(typeof it.url!=='string') return {ok:false, msg:'Item '+(i+1)+': url wajib string'};
       if(it.url.trim()==='') return {ok:false, msg:'Item '+(i+1)+': url kosong'};
-      // cegah javascript: url
       if(/^\s*javascript:/i.test(it.url)) return {ok:false, msg:'Item '+(i+1)+': url tidak boleh javascript:'};
-      // icon opsional, tapi harus string dan dari whitelist atau bi-*
       if(it.icon && typeof it.icon!=='string') return {ok:false, msg:'Item '+(i+1)+': icon harus string'};
     }
     return {ok:true};
@@ -3027,6 +3023,26 @@ function initMotiv(){
     });
   }
 
+  function extractQuickLinksArray(rawData){
+    if(!rawData) return null;
+    if(Array.isArray(rawData)){
+      if(rawData.length===0) return rawData;
+      if(rawData[0] && (rawData[0].text || rawData[0].url)) return rawData;
+      if(rawData[0] && rawData[0].type) return null;
+      return rawData;
+    }
+    if(rawData && Array.isArray(rawData.data)){
+      return rawData.data;
+    }
+    if(rawData && Array.isArray(rawData.quickLinks)){
+      return rawData.quickLinks;
+    }
+    if(rawData && rawData.quickLinks && Array.isArray(rawData.quickLinks.data)){
+      return rawData.quickLinks.data;
+    }
+    return null;
+  }
+
   // --- EXPORT / IMPORT ---
   function exportQuickLinks(){
     const links = loadQuickLinks();
@@ -3034,7 +3050,7 @@ function initMotiv(){
       version:1,
       exportedAt: new Date().toISOString(),
       app:'tautan-cepat-bbgtk',
-      data: links
+      data: Array.isArray(links) ? links : []
     };
     const json = JSON.stringify(payload, null, 2);
     const blob = new Blob([json], {type:'application/json'});
@@ -3048,19 +3064,25 @@ function initMotiv(){
   }
 
   function importQuickLinksFromData(rawData, mode){
-    // mode: 'replace' atau 'merge'
-    let arr = rawData;
-    // support format {data:[...]} atau langsung [...]
-    if(rawData && rawData.data && Array.isArray(rawData.data)) arr = rawData.data;
+    let arr = extractQuickLinksArray(rawData);
+    if(!arr){
+      if(rawData && typeof rawData==='object'){
+        if(Array.isArray(rawData.quickLinks)) arr = rawData.quickLinks;
+        else if(rawData.data && Array.isArray(rawData.data) && rawData.data.length>0 && rawData.data[0].text) arr = rawData.data;
+      }
+    }
+    if(!arr){
+      alert('Import gagal: Format harus array atau file backup tautan cepat / portal lengkap.\nPastikan file berisi data tautan cepat.');
+      return;
+    }
     const v = validateQuickLinksData(arr);
     if(!v.ok){ alert('Import gagal: '+v.msg); return; }
     const sanitized = sanitizeQuickLinks(arr);
     let finalList;
     if(mode==='merge'){
       const existing = loadQuickLinks();
-      // gabung, hindari duplikat berdasarkan text+url
       const map = new Map();
-      existing.forEach(function(x){ map.set((x.text+'|'+x.url).toLowerCase(), x); });
+      existing.forEach(function(x){ if(x && x.text && x.url) map.set((x.text+'|'+x.url).toLowerCase(), x); });
       sanitized.forEach(function(x){
         const key = (x.text+'|'+x.url).toLowerCase();
         if(!map.has(key)) map.set(key, x);
@@ -3083,10 +3105,10 @@ function initMotiv(){
     reader.onload = function(e){
       try{
         const parsed = JSON.parse(e.target.result);
-        // dialog pilih mode
         const mode = confirm('Klik OK untuk GABUNG dengan yang ada, Cancel untuk GANTI SEMUA') ? 'merge' : 'replace';
         importQuickLinksFromData(parsed, mode);
       }catch(err){
+        console.error(err);
         alert('File JSON tidak valid: '+err.message);
       }
     };
@@ -3376,7 +3398,7 @@ function initMotiv(){
 </script>
 
 
-<script>// === GLOBAL EXPORT/IMPORT ICON ONLY TOP-LEFT (working) ===
+<script>// === GLOBAL EXPORT/IMPORT ICON ONLY TOP-LEFT (FIXED ROBUST) ===
 (function(){
   const BLOCKS_KEY = 'google-portal-blocks';
   const HERO_KEY = 'google-portal-hero';
@@ -3385,39 +3407,105 @@ function initMotiv(){
   const FAVS_KEY = 'chrome-favorites-apps-v1';
   const CAL_KEY_LOCAL = 'google-calendar-events-v1';
   function safeParse(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
+  function safeParseArray(k){ const v=safeParse(k); return Array.isArray(v)?v:[]; }
   function downloadJSON(d,f){const j=JSON.stringify(d,null,2);const b=new Blob([j],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=f;document.body.appendChild(a);a.click();setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(u)},600)}
   function exportAllPortal(){
-    const payload={version:3,exportedAt:new Date().toISOString(),app:'bbgtk-portal-lengkap',blocks:safeParse(BLOCKS_KEY),hero:safeParse(HERO_KEY),quickLinks:safeParse(QUICK_KEY),rowTitles:safeParse(ROW_TITLES_KEY),favorites:safeParse(FAVS_KEY),calendar:safeParse(CAL_KEY_LOCAL)};
+    const blocksRaw = safeParse(BLOCKS_KEY);
+    const quickRaw = safeParse(QUICK_KEY);
+    const favRaw = safeParse(FAVS_KEY);
+    const calRaw = safeParse(CAL_KEY_LOCAL);
+    const payload={
+      version:3,
+      exportedAt:new Date().toISOString(),
+      app:'bbgtk-portal-lengkap',
+      blocks: Array.isArray(blocksRaw) ? blocksRaw : [],
+      hero: safeParse(HERO_KEY),
+      quickLinks: Array.isArray(quickRaw) ? quickRaw : [],
+      rowTitles: safeParse(ROW_TITLES_KEY),
+      favorites: Array.isArray(favRaw) ? favRaw : (favRaw || null),
+      calendar: Array.isArray(calRaw) ? calRaw : (calRaw || null)
+    };
     downloadJSON(payload,'portal-bbgtk-lengkap-'+new Date().toISOString().slice(0,10)+'.json');
+  }
+  function isBlocksArray(arr){
+    return Array.isArray(arr) && arr.length>0 && arr[0] && typeof arr[0].type==='string';
+  }
+  function isQuickLinksArray(arr){
+    return Array.isArray(arr) && arr.length>0 && arr[0] && (typeof arr[0].text==='string' || typeof arr[0].url==='string') && !arr[0].type;
   }
   function importAllPortal(file){
     const reader=new FileReader();
     reader.onload=function(e){
       try{
         const parsed=JSON.parse(e.target.result);
-        let blocks=parsed.blocks||parsed.data||parsed;
-        let quick=parsed.quickLinks;
-        let hero=parsed.hero;
-        let titles=parsed.rowTitles;
-        let favs=parsed.favorites;
-        let cal=parsed.calendar;
-        if(Array.isArray(parsed)&&parsed.length>0&&parsed[0].type){blocks=parsed;quick=null}
+        let blocks=null;
+        let quick=null;
+        let hero=null;
+        let titles=null;
+        let favs=null;
+        let cal=null;
+
+        if(Array.isArray(parsed)){
+          if(isBlocksArray(parsed)){
+            blocks=parsed;
+          }else if(isQuickLinksArray(parsed) || (parsed.length>0 && parsed[0].text)){
+            quick=parsed;
+          }else if(parsed.length===0){
+            blocks=[];
+          }else{
+            if(parsed[0] && parsed[0].type) blocks=parsed;
+            else quick=parsed;
+          }
+        }else if(parsed && typeof parsed==='object'){
+          if(Array.isArray(parsed.blocks)) blocks=parsed.blocks;
+          if(Array.isArray(parsed.quickLinks)) quick=parsed.quickLinks;
+          else if(parsed.quickLinks && Array.isArray(parsed.quickLinks.data)) quick=parsed.quickLinks.data;
+          if(!quick && Array.isArray(parsed.data)){
+            if(parsed.data.length>0 && parsed.data[0] && parsed.data[0].text){
+              quick=parsed.data;
+            }else if(parsed.data.length>0 && parsed.data[0] && parsed.data[0].type){
+              if(!blocks) blocks=parsed.data;
+            }
+          }
+          if(!blocks && !quick && parsed.app && String(parsed.app).includes('tautan-cepat') && Array.isArray(parsed.data)){
+            quick=parsed.data;
+          }
+          if(parsed.hero) hero=parsed.hero;
+          if(parsed.rowTitles) titles=parsed.rowTitles;
+          if(parsed.favorites) favs=parsed.favorites;
+          if(parsed.calendar) cal=parsed.calendar;
+        }
+
+        const hasBlocks = Array.isArray(blocks);
+        const hasQuick = Array.isArray(quick);
+        if(!hasBlocks && !hasQuick && !hero && !titles && !favs && !cal){
+          alert('Import gagal: File tidak mengandung data portal yang valid.\nPastikan file adalah hasil ekspor portal lengkap, backup-landing, atau tautan cepat.');
+          return;
+        }
+
         const mode=confirm('OK = GABUNG, Cancel = GANTI SEMUA')?'merge':'replace';
-        if(!confirm('Import Mode: '+mode.toUpperCase()+' Jumlah: '+(blocks?blocks.length:0)+' Lanjut?')) return;
-        if(blocks){
-          if(mode==='replace'){localStorage.setItem(BLOCKS_KEY,JSON.stringify(blocks));}
-          else{
-            const ex=safeParse(BLOCKS_KEY)||[];
+        const totalBlocks = hasBlocks ? blocks.length : 0;
+        const totalQuick = hasQuick ? quick.length : 0;
+        if(!confirm('Import Mode: '+mode.toUpperCase()+'\nBlok Icon: '+totalBlocks+'\nTautan Cepat: '+totalQuick+'\nLanjut?')) return;
+
+        if(hasBlocks){
+          if(mode==='replace'){
+            localStorage.setItem(BLOCKS_KEY,JSON.stringify(blocks));
+          }else{
+            const exRaw=safeParse(BLOCKS_KEY);
+            const ex=Array.isArray(exRaw)?exRaw:[];
             const merged=ex.slice();
-            const ids=new Set(ex.map(b=>b.id));
-            blocks.forEach(nb=>{
-              if(!ids.has(nb.id)){merged.push(nb);}
-              else{
-                const idx=merged.findIndex(b=>b.id===nb.id);
-                if(idx>=0&&merged[idx].type==='row'&&nb.type==='row'){
+            const ids=new Set(ex.map(function(b){ return b && b.id; }).filter(Boolean));
+            blocks.forEach(function(nb){
+              if(!nb || !nb.id){ merged.push(nb); return; }
+              if(!ids.has(nb.id)){
+                merged.push(nb);
+              }else{
+                const idx=merged.findIndex(function(b){ return b.id===nb.id; });
+                if(idx>=0 && merged[idx].type==='row' && nb.type==='row'){
                   const map=new Map();
-                  (merged[idx].apps||[]).forEach(a=>map.set(a.title+'|'+a.url,a));
-                  (nb.apps||[]).forEach(a=>{const k=a.title+'|'+a.url;if(!map.has(k))map.set(k,a);});
+                  (merged[idx].apps||[]).forEach(function(a){ if(a && a.title && a.url) map.set((a.title+'|'+a.url).toLowerCase(), a); });
+                  (nb.apps||[]).forEach(function(a){ if(!a || !a.title || !a.url) return; const k=(a.title+'|'+a.url).toLowerCase(); if(!map.has(k)) map.set(k,a); });
                   merged[idx].apps=Array.from(map.values());
                 }
               }
@@ -3425,23 +3513,37 @@ function initMotiv(){
             localStorage.setItem(BLOCKS_KEY,JSON.stringify(merged));
           }
         }
-        if(quick){
+
+        if(hasQuick){
           const qMode=confirm('Tautan Cepat: OK=GABUNG, Cancel=GANTI')?'merge':'replace';
-          if(qMode==='replace'){localStorage.setItem(QUICK_KEY,JSON.stringify(quick));}
-          else{
-            const exQ=safeParse(QUICK_KEY)||[];
+          if(qMode==='replace'){
+            localStorage.setItem(QUICK_KEY,JSON.stringify(quick));
+          }else{
+            const exQRaw=safeParse(QUICK_KEY);
+            const exQ=Array.isArray(exQRaw)?exQRaw:[];
             const mapQ=new Map();
-            exQ.forEach(x=>mapQ.set((x.text+'|'+x.url).toLowerCase(),x));
-            (Array.isArray(quick)?quick:quick.data||[]).forEach(x=>{const k=(x.text+'|'+x.url).toLowerCase();if(!mapQ.has(k))mapQ.set(k,x);});
+            exQ.forEach(function(x){ if(x && x.text && x.url) mapQ.set((x.text+'|'+x.url).toLowerCase(), x); });
+            const quickArr = Array.isArray(quick) ? quick : (quick.data||[]);
+            quickArr.forEach(function(x){
+              if(!x || !x.text || !x.url) return;
+              const k=(x.text+'|'+x.url).toLowerCase();
+              if(!mapQ.has(k)) mapQ.set(k,x);
+            });
             localStorage.setItem(QUICK_KEY,JSON.stringify(Array.from(mapQ.values())));
           }
         }
-        if(hero)localStorage.setItem(HERO_KEY,JSON.stringify(hero));
-        if(titles)localStorage.setItem(ROW_TITLES_KEY,JSON.stringify(titles));
-        if(favs)localStorage.setItem(FAVS_KEY,JSON.stringify(favs));
-        if(cal)localStorage.setItem(CAL_KEY_LOCAL,JSON.stringify(cal));
-        alert('Import berhasil! Reload...');location.reload();
-      }catch(err){alert('JSON tidak valid: '+err.message);}
+
+        if(hero) localStorage.setItem(HERO_KEY,JSON.stringify(hero));
+        if(titles) localStorage.setItem(ROW_TITLES_KEY,JSON.stringify(titles));
+        if(favs) localStorage.setItem(FAVS_KEY,JSON.stringify(favs));
+        if(cal) localStorage.setItem(CAL_KEY_LOCAL,JSON.stringify(cal));
+
+        alert('Import berhasil! Reload...');
+        location.reload();
+      }catch(err){
+        console.error(err);
+        alert('JSON tidak valid: '+err.message);
+      }
     };
     reader.readAsText(file);
   }
@@ -3490,10 +3592,11 @@ function initMotiv(){
       const h = u.hostname.toLowerCase();
       const list=[];
       if(MAP[h]) list.push(MAP[h]);
+      // FIX: DuckDuckGo & direct dulu, s2 belakangan, generic paling akhir
+      list.push('https://icons.duckduckgo.com/ip3/'+h+'.ico');
+      list.push('https://'+h+'/favicon.ico');
       list.push('https://www.google.com/s2/favicons?domain_url='+encodeURIComponent(u.href)+'&sz=64');
       list.push('https://www.google.com/s2/favicons?domain='+h+'&sz=64');
-      list.push('https://'+h+'/favicon.ico');
-      list.push('https://icons.duckduckgo.com/ip3/'+h+'.ico');
       if(window.GENERIC_FALLBACK_ICON) list.push(window.GENERIC_FALLBACK_ICON);
       return list;
     }catch{ return []; }
@@ -3505,6 +3608,7 @@ function initMotiv(){
       const raw=localStorage.getItem(key);
       if(!raw) return;
       const blocks=JSON.parse(raw);
+      if(!Array.isArray(blocks)) return;
       let changed=false;
       blocks.forEach(b=>{
         if(b.type==='row' && Array.isArray(b.apps)){
@@ -3559,23 +3663,47 @@ function initMotiv(){
     }catch(e){}
   }
 
-  // Enhance all favicon images with retry chain
+  // Enhance all favicon images with retry chain - FIXED for Vercel & no-favicon sites
   function enhanceImages(){
     const imgs = document.querySelectorAll('.icon-wrapper img, .fav-icon-wrap img');
     imgs.forEach(img=>{
-      if(img.dataset.faviconPatched) return;
-      // find url from parent link or data
+      if(img.dataset.faviconPatched) {
+        // jika sudah patched tapi masih s2 generic, coba upgrade ke product icon jika ada
+        try{
+          const link = img.closest('a');
+          const url = link && link.href ? link.href : '';
+          if(url){
+            const cands = candidatesFor(url);
+            if(cands.length && cands[0] && img.src !== cands[0] && cands[0].startsWith('https://ssl.gstatic.com')){
+              // product icon tersedia, paksa upgrade
+              img.src = cands[0];
+              img.dataset.candIdx = 0;
+            }
+          }
+        }catch(e){}
+        return;
+      }
       let url = '';
       const link = img.closest('a');
       if(link && link.href) url = link.href;
       if(!url) return;
       const cands = candidatesFor(url);
       if(!cands.length) return;
-      // if src is already best, keep but add fallback
+      // Jika src saat ini adalah s2 generic atau bukan kandidat terbaik, reset ke kandidat pertama
       let currentIdx = cands.indexOf(img.src);
-      if(currentIdx===-1){
-        // check if src is product icon already, then prepend chain starting after it
+      // Jika src mengandung s2 dan kita punya product icon atau duckduckgo, paksa mulai dari 0
+      if(img.src.includes('s2/favicons') && cands[0] && !img.src.includes(cands[0])){
+        // coba upgrade langsung ke kandidat terbaik (product atau duckduckgo)
+        img.src = cands[0];
         currentIdx = 0;
+      }
+      if(currentIdx===-1){
+        // src tidak ada di list, mulai dari 0 (coba yang terbaik dulu)
+        currentIdx = 0;
+        // Jika belum ada src product, set ke pertama
+        if(!img.src || img.src.includes('s2/favicons') || img.src.includes('data:image')){
+          // biarkan error handler yang akan coba, tapi set dataset dulu
+        }
       }
       img.dataset.faviconPatched='1';
       img.dataset.cands = JSON.stringify(cands);
