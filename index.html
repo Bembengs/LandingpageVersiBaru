@@ -1846,21 +1846,30 @@
 .cal-title{ font-size: 13.5px; font-weight: 700; color: #1e293b; }
 .cal-list{ display: flex; flex-direction: column; gap: 0px; }
 .cal-item{
-  display: flex; align-items: center; gap: 4px; padding: 2px 4px; border-radius: 6px;
-  cursor: pointer; transition: background .12s ease; text-decoration: none; min-width:0; flex:1;
+  display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 6px;
+  cursor: pointer; transition: background .12s ease; text-decoration: none;
 }
 .cal-item:hover{ background: #f8fafc; }
 .cal-dot{
-  width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-size: 9px;
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-size: 11px;
 }
 .cal-dot.blue{ background: #dbeafe; color: #2563eb; }
 .cal-dot.green{ background: #dcfce7; color: #16a34a; }
 .cal-dot.yellow{ background: #fef3c7; color: #d97706; }
 .cal-dot.purple{ background: #ede9fe; color: #7c3aed; }
-.cal-info{ flex:1; min-width:0; display:flex; align-items:center; gap:4px; overflow:hidden; }
-.cal-item-title{ font-size: 10.5px; font-weight: 500; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex:1; min-width:0; line-height:1.2; }
-.cal-item-date{ font-size: 9px; color: #334155; white-space: nowrap; flex-shrink:0; font-weight:600; letter-spacing:0.1px; background:#e2e8f0; padding:1px 5px; border-radius:10px; line-height:1.3; max-width:108px; overflow:hidden; text-overflow:ellipsis; }
-.cal-arrow{ display:none; }
+.cal-info{ flex:1; min-width:0; display:flex; align-items:center; gap:6px; }
+.cal-item-title{ font-size: 11.5px; font-weight: 500; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex:1; min-width:0; line-height:1.2; }
+.cal-item-date{ font-size: 10px; color: #64748b; white-space: nowrap; flex-shrink:0; font-weight:400; letter-spacing:0.1px; }
+.cal-arrow{ color:#cbd5e1; font-size:9px; flex-shrink:0; }
+#calStatus{ display:none !important; }
+.cal-row{ position:relative; display:flex; align-items:center; gap:4px; padding:0; }
+.cal-row.completed .cal-item{ opacity:0.5; }
+.cal-row.completed .cal-item-title{ text-decoration: line-through; color:#94a3b8; }
+.cal-check{ width:13px; height:13px; flex-shrink:0; accent-color:#5b67f7; cursor:pointer; margin:0 2px 0 0; }
+.cal-more-wrap{ display:flex; justify-content:flex-end; padding:6px 4px 2px 4px; }
+.cal-more-btn{ font-size:10.5px; color:#5b67f7; background:#eef2ff; border:1px solid #e0e7ff; padding:3px 10px; border-radius:12px; cursor:pointer; font-weight:500; transition:all .15s; }
+.cal-more-btn:hover{ background:#e0e7ff; }
+
 
 .quick-card{
   background:#ffffff; border:1px solid #eef1f6; border-radius:16px;
@@ -2108,16 +2117,6 @@
 .io-icon-btn:hover::after{opacity:1;transform:translateX(-50%) translateY(0);}
 .io-icon-btn:hover::before{opacity:1;}
 @media (max-width:768px){#portalIOFloat{top:10px;left:10px;}.io-icon-btn{width:32px;height:32px;}}
-
-
-.cal-row{ position:relative; display:flex; align-items:center; gap:2px; padding:1px 0; min-width:0; }
-.cal-row.completed .cal-item{ opacity:0.5; }
-.cal-row.completed .cal-item-title{ text-decoration: line-through; color:#94a3b8; }
-.cal-check{ width:11px; height:11px; flex-shrink:0; accent-color:#5b67f7; cursor:pointer; margin:0 1px 0 0; }
-.cal-more-wrap{ display:flex; justify-content:flex-end; padding:6px 2px 2px 2px; }
-.cal-more-btn{ font-size:10px; color:#5b67f7; background:#eef2ff; border:1px solid #e0e7ff; padding:2px 9px; border-radius:12px; cursor:pointer; font-weight:500; transition:all .15s; }
-.cal-more-btn:hover{ background:#e0e7ff; }
-#calStatus{ display:none !important; }
 
 </style>
 </head>
@@ -2955,6 +2954,40 @@ function renderTopLinks(){
       localStorage.removeItem(GCAL_CACHE_TIME_KEY);
     }catch(e){}
   }
+
+  // ===== HIDDEN / COMPLETED (checkbox hide) =====
+  function loadHiddenIds(){
+    try{
+      const raw = localStorage.getItem(GCAL_HIDDEN_KEY);
+      if(!raw) return [];
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){ return []; }
+  }
+  function saveHiddenIds(arr){
+    try{ localStorage.setItem(GCAL_HIDDEN_KEY, JSON.stringify(arr)); }catch(e){}
+  }
+  function isHidden(id){
+    const list = loadHiddenIds();
+    return list.indexOf(id) !== -1;
+  }
+  function toggleHidden(id, hide){
+    let list = loadHiddenIds();
+    const idx = list.indexOf(id);
+    if(hide){
+      if(idx===-1) list.push(id);
+    } else {
+      if(idx!==-1) list.splice(idx,1);
+    }
+    saveHiddenIds(list);
+  }
+  function truncateTitle(str, maxLen){
+    const max = maxLen || 22;
+    if(!str) return '';
+    const s = str.trim();
+    if(s.length <= max) return s;
+    return s.slice(0, max).trim() + '…';
+  }
   function isDummyConfig(calendarId, apiKey){
     const id = (calendarId||'').toLowerCase();
     const key = (apiKey||'').toLowerCase();
@@ -2977,12 +3010,12 @@ function renderTopLinks(){
         <div class="motiv-line"></div>
       </div>
       <div class="cal-card" id="calCard">
-                <div class="cal-header">
-          <i class="bi bi-calendar-event" style="font-size:14px;color:#1e293b"></i>
+        <div class="cal-header">
+          <i class="bi bi-calendar-event" style="font-size:16px;color:#1e293b"></i>
           <div class="cal-title">Kegiatan Mendatang</div>
-          <div style="margin-left:auto; display:flex; gap:4px;">
-            <button id="calRefreshBtn" title="Refresh" style="width:24px;height:24px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;"><i class="bi bi-arrow-clockwise" style="font-size:10px"></i></button>
-            <button id="calSettingsBtn" title="Pengaturan" style="width:24px;height:24px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;"><i class="bi bi-gear" style="font-size:10px"></i></button>
+          <div style="margin-left:auto; display:flex; gap:6px;">
+            <button id="calRefreshBtn" title="Refresh sinkron" style="width:26px;height:26px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;"><i class="bi bi-arrow-clockwise" style="font-size:11px"></i></button>
+            <button id="calSettingsBtn" title="Pengaturan Kalender" style="width:26px;height:26px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;"><i class="bi bi-gear" style="font-size:11px"></i></button>
           </div>
         </div>
         <div id="calStatus" style="display:none; margin:0 4px 10px 4px; padding:8px 10px; border-radius:8px; font-size:11px; line-height:1.4;"></div>
@@ -3022,7 +3055,12 @@ function renderTopLinks(){
   }
 
   // ===== Calendar Rendering =====
-    function showCalStatus(msg, type){ const el=document.getElementById('calStatus'); if(el) el.style.display='none'; }
+  function showCalStatus(msg, type){
+    // Notifikasi sengaja dihilangkan sesuai permintaan - tetap simpan fungsi agar tidak error
+    const el = document.getElementById('calStatus');
+    if(el){ el.style.display='none'; }
+    return;
+  }
 
   function formatGCalDate(start){
     try{
@@ -3037,51 +3075,20 @@ function renderTopLinks(){
       } else {
         return '';
       }
-      // Hanya jam mulai (start), bukan jam selesai - sesuai permintaan
-      const now = new Date();
-      const sameYear = d.getFullYear() === now.getFullYear();
-      // Jika tahun sama, hemat ruang: "12 Sep" saja, kalau beda tahun tampilkan tahun
-      const dateOpts = sameYear ? {day:'numeric', month:'short'} : {day:'numeric', month:'short', year:'numeric'};
-      const datePart = d.toLocaleDateString('id-ID', dateOpts);
+      const datePart = d.toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
       if(isAllDay){
         return datePart;
       }
       const timePart = d.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
-      // Format: "12 Sep (12:30)" untuk tahun sama, "12 Sep 2025 (12:30)" untuk beda tahun - jam mulai saja
+      // Format sesuai permintaan: "12 Sep 2025 (12:30)"
       return datePart + ' (' + timePart + ')';
     }catch(e){
       return start.dateTime || start.date || '';
     }
   }
-
-  // ===== Helper hidden / truncate =====
-  function loadHiddenIds(){
-    try{
-      const raw = localStorage.getItem(GCAL_HIDDEN_KEY);
-      if(!raw) return [];
-      const arr = JSON.parse(raw);
-      return Array.isArray(arr) ? arr : [];
-    }catch(e){ return []; }
-  }
-  function saveHiddenIds(arr){
-    try{ localStorage.setItem(GCAL_HIDDEN_KEY, JSON.stringify(arr)); }catch(e){}
-  }
-  function toggleHidden(id, hide){
-    let list = loadHiddenIds();
-    const idx = list.indexOf(id);
-    if(hide){
-      if(idx===-1) list.push(id);
-    } else {
-      if(idx!==-1) list.splice(idx,1);
-    }
-    saveHiddenIds(list);
-  }
-  function truncateTitle(str, maxLen){
-    const max = maxLen || 22;
-    if(!str) return '';
-    const s = str.trim();
-    if(s.length <= max) return s;
-    return s.slice(0, max).trim() + '…';
+  function formatGCalDateShort(start){
+    // untuk fallback manual yang date-nya sudah string
+    return start || '';
   }
 
   function getGCalColor(index){
@@ -3089,13 +3096,23 @@ function renderTopLinks(){
     return colors[index % colors.length];
   }
 
-  function renderManualCalendar(expanded){
+      function renderManualCalendar(expanded){
     const listEl = document.getElementById('calList');
     if(!listEl) return;
     const events = loadEvents();
     listEl.innerHTML = '';
+
+    if(!events || events.length===0){
+      const empty = document.createElement('div');
+      empty.style.cssText='padding:12px 8px; text-align:center; color:#94a3b8; font-size:11px;';
+      empty.innerHTML = '<i class="bi bi-calendar-x" style="font-size:16px; display:block; margin-bottom:4px;"></i>Belum ada kegiatan.';
+      listEl.appendChild(empty);
+      return;
+    }
+
     const hiddenIds = loadHiddenIds();
     const visibleEvents = events.filter(function(ev){ return hiddenIds.indexOf(ev.id) === -1; });
+
     const isExpanded = !!expanded;
     const limit = 6;
     const displayEvents = isExpanded ? visibleEvents : visibleEvents.slice(0, limit);
@@ -3104,6 +3121,7 @@ function renderTopLinks(){
       const row = document.createElement('div');
       row.className = 'cal-row';
       row.dataset.id = ev.id;
+
       const check = document.createElement('input');
       check.type='checkbox';
       check.className='cal-check';
@@ -3112,16 +3130,18 @@ function renderTopLinks(){
         e.stopPropagation();
         if(check.checked){
           row.style.transition='opacity .2s';
-          row.style.opacity='0.4';
+          row.style.opacity='0.3';
           row.classList.add('completed');
           setTimeout(function(){
             toggleHidden(ev.id, true);
             renderManualCalendar(isExpanded);
-          }, 200);
+          }, 250);
         }
       });
+
       const a = document.createElement('a');
       a.className = 'cal-item';
+      a.style.flex='1';
       a.href = ev.url || '#';
       if(ev.url && ev.url !== '#' && !ev.url.startsWith('#')){
         if(/^https?:\/\//i.test(ev.url) || ev.url.startsWith('http')){
@@ -3140,11 +3160,22 @@ function renderTopLinks(){
       title.title = ev.title + ' - ' + ev.date;
       const date = document.createElement('div');
       date.className = 'cal-item-date';
+      // ev.date sudah berisi tanggal, kita pakai apa adanya
       date.textContent = ev.date;
       info.appendChild(title);
       info.appendChild(date);
+      const arrow = document.createElement('i');
+      arrow.className = 'bi bi-chevron-right cal-arrow';
       a.appendChild(dot);
       a.appendChild(info);
+      a.appendChild(arrow);
+      a.addEventListener('click', function(e){
+        if(!ev.url || ev.url==='#' || ev.url.trim()===''){
+          e.preventDefault();
+          openCalEditor(ev.id);
+        }
+      });
+
       row.appendChild(check);
       row.appendChild(a);
       listEl.appendChild(row);
@@ -3152,14 +3183,14 @@ function renderTopLinks(){
 
     if(hiddenIds.length>0){
       const hiddenInfo = document.createElement('div');
-      hiddenInfo.style.cssText='padding:3px 4px; text-align:right; font-size:9px; color:#94a3b8;';
+      hiddenInfo.style.cssText='padding:4px 6px; text-align:right; font-size:10px; color:#94a3b8;';
       hiddenInfo.innerHTML = hiddenIds.length + ' disembunyikan • <a href="#" id="calShowHiddenManual" style="color:#5b67f7; text-decoration:none;">Tampilkan</a>';
       listEl.appendChild(hiddenInfo);
       const showLink = hiddenInfo.querySelector('#calShowHiddenManual');
       if(showLink){
         showLink.addEventListener('click', function(e){
           e.preventDefault();
-          if(confirm('Tampilkan kembali '+hiddenIds.length+' kegiatan?')){
+          if(confirm('Tampilkan kembali '+hiddenIds.length+' kegiatan yang disembunyikan?')){
             saveHiddenIds([]);
             renderManualCalendar(isExpanded);
           }
@@ -3172,11 +3203,12 @@ function renderTopLinks(){
       moreWrap.className='cal-more-wrap';
       const btn = document.createElement('button');
       btn.type='button';
+      btn.id='calMoreBtn';
       btn.className='cal-more-btn';
       if(isExpanded){
-        btn.innerHTML = 'Less <i class="bi bi-chevron-up" style="margin-left:2px;"></i>';
+        btn.innerHTML = 'Less <i class="bi bi-chevron-up" style="margin-left:3px;"></i>';
       } else {
-        btn.innerHTML = 'More (+' + (visibleEvents.length - limit) + ') <i class="bi bi-chevron-down" style="margin-left:2px;"></i>';
+        btn.innerHTML = 'More (+' + (visibleEvents.length - limit) + ') <i class="bi bi-chevron-down" style="margin-left:3px;"></i>';
       }
       btn.addEventListener('click', function(e){
         e.preventDefault();
@@ -3187,27 +3219,28 @@ function renderTopLinks(){
     }
   }
 
-  function renderGCalList(items, isCached, expanded){
+      function renderGCalList(items, isCached, expanded){
     const listEl = document.getElementById('calList');
     if(!listEl) return;
     listEl.innerHTML = '';
     
     if(!items || items.length===0){
       const empty = document.createElement('div');
-      empty.style.cssText='padding:10px 6px; text-align:center; color:#94a3b8; font-size:10.5px;';
-      empty.innerHTML = '<i class="bi bi-calendar-x" style="font-size:14px; display:block; margin-bottom:3px;"></i>Tidak ada kegiatan.';
+      empty.style.cssText='padding:12px 8px; text-align:center; color:#94a3b8; font-size:11px;';
+      empty.innerHTML = '<i class="bi bi-calendar-x" style="font-size:16px; display:block; margin-bottom:4px;"></i>Tidak ada kegiatan mendatang.';
       listEl.appendChild(empty);
       return;
     }
 
     const hiddenIds = loadHiddenIds();
-    const visibleItems = items.filter(function(ev){ return hiddenIds.indexOf(ev.id||ev.summary) === -1; });
+    const visibleItems = items.filter(function(ev){ return hiddenIds.indexOf(ev.id||ev.htmlLink||ev.summary) === -1; });
+    // Untuk more logic, hitung dari visible saja? Tapi tetap hitung total visible untuk UX
     const isExpanded = !!expanded;
     const limit = 6;
     const displayItems = isExpanded ? visibleItems : visibleItems.slice(0, limit);
 
     displayItems.forEach(function(ev, idx){
-      const evId = ev.id || ev.summary || ('gcal_'+idx);
+      const evId = ev.id || ev.htmlLink || ev.summary || ('gcal_'+idx);
       const row = document.createElement('div');
       row.className = 'cal-row';
       row.dataset.gcalId = evId;
@@ -3215,22 +3248,24 @@ function renderTopLinks(){
       const check = document.createElement('input');
       check.type='checkbox';
       check.className='cal-check';
-      check.title='Centang untuk sembunyikan jika sudah selesai';
+      check.title='Sembunyikan jika sudah selesai';
       check.addEventListener('change', function(e){
         e.stopPropagation();
         if(check.checked){
-          row.style.transition='opacity .2s';
-          row.style.opacity='0.4';
+          // animasi hide
+          row.style.transition='opacity .2s, transform .2s';
+          row.style.opacity='0.3';
           row.classList.add('completed');
           setTimeout(function(){
             toggleHidden(evId, true);
             renderGCalList(items, isCached, isExpanded);
-          }, 200);
+          }, 250);
         }
       });
 
       const a = document.createElement('a');
       a.className = 'cal-item';
+      a.style.flex='1';
       a.href = ev.htmlLink || '#';
       if(ev.htmlLink && ev.htmlLink !== '#'){
         a.target='_blank';
@@ -3245,30 +3280,34 @@ function renderTopLinks(){
       title.className = 'cal-item-title';
       const fullTitle = ev.summary || '(Tanpa judul)';
       title.textContent = truncateTitle(fullTitle, 22);
-      title.title = fullTitle + ' - ' + formatGCalDate(ev.start);
+      title.title = fullTitle + ' - ' + formatGCalDate(ev.start) + (ev.location ? ' • '+ev.location : '');
       const date = document.createElement('div');
       date.className = 'cal-item-date';
       date.textContent = formatGCalDate(ev.start);
       info.appendChild(title);
       info.appendChild(date);
+      const arrow = document.createElement('i');
+      arrow.className = 'bi bi-chevron-right cal-arrow';
       a.appendChild(dot);
       a.appendChild(info);
+      a.appendChild(arrow);
 
       row.appendChild(check);
       row.appendChild(a);
       listEl.appendChild(row);
     });
 
-    if(hiddenIds.length>0){
+    // Info hidden
+    if(hiddenIds.length>0 && items.length>0){
       const hiddenInfo = document.createElement('div');
-      hiddenInfo.style.cssText='padding:3px 4px; text-align:right; font-size:9px; color:#94a3b8;';
+      hiddenInfo.style.cssText='padding:4px 6px; text-align:right; font-size:10px; color:#94a3b8;';
       hiddenInfo.innerHTML = hiddenIds.length + ' disembunyikan • <a href="#" id="calShowHidden" style="color:#5b67f7; text-decoration:none;">Tampilkan</a>';
       listEl.appendChild(hiddenInfo);
       const showLink = hiddenInfo.querySelector('#calShowHidden');
       if(showLink){
         showLink.addEventListener('click', function(e){
           e.preventDefault();
-          if(confirm('Tampilkan kembali '+hiddenIds.length+' kegiatan?')){
+          if(confirm('Tampilkan kembali '+hiddenIds.length+' kegiatan yang disembunyikan?')){
             saveHiddenIds([]);
             renderGCalList(items, isCached, isExpanded);
           }
@@ -3284,9 +3323,9 @@ function renderTopLinks(){
       btn.id='calMoreBtn';
       btn.className='cal-more-btn';
       if(isExpanded){
-        btn.innerHTML = 'Less <i class="bi bi-chevron-up" style="margin-left:2px;"></i>';
+        btn.innerHTML = 'Less <i class="bi bi-chevron-up" style="margin-left:3px;"></i>';
       } else {
-        btn.innerHTML = 'More (+' + (visibleItems.length - limit) + ') <i class="bi bi-chevron-down" style="margin-left:2px;"></i>';
+        btn.innerHTML = 'More (+' + (visibleItems.length - limit) + ') <i class="bi bi-chevron-down" style="margin-left:3px;"></i>';
       }
       btn.addEventListener('click', function(e){
         e.preventDefault();
@@ -3981,7 +4020,8 @@ const defaultQuickLinks = [
     initMotiv();
     initQuick();
 
-        const settingsBtn = document.getElementById('calSettingsBtn');
+    // Hanya refresh dan setting (tombol + sudah dihapus sesuai permintaan)
+    const settingsBtn = document.getElementById('calSettingsBtn');
     if(settingsBtn && !settingsBtn.dataset.bound){
       settingsBtn.dataset.bound='1';
       settingsBtn.addEventListener('click', function(e){
