@@ -2886,13 +2886,18 @@ function renderTopLinks(){
 </script>
 
 
+
 <script>
-// Sidebar final - motiv sejajar dengan Aplikasi & Layanan, hero full, semua bisa edit
+// Sidebar final - motiv + calendar Google Calendar API Alur A + quick links
+// Alur A: Publik + API Key, settings bisa diganti manual via UI (permanen di localStorage)
 (function(){
   const MOTIV_KEY = 'motiv-card-editable-v2';
   const CAL_KEY = 'google-calendar-events-v1';
   const QUICK_KEY = 'tautan-cepat-editable-v1';
-  
+  const GCAL_CONFIG_KEY = 'gcal_config_v1';
+  const GCAL_CACHE_KEY = 'gcal_cache_v1';
+  const GCAL_CACHE_TIME_KEY = 'gcal_cache_time_v1';
+
   const defaultEvents = [
     {id:'e1', title:'Pengumuman Kepegawaian', date:'12 Sep 2025', color:'blue', icon:'bi-megaphone', url:'#'},
     {id:'e2', title:'Jadwal Diklat Mendalam', date:'10 Sep 2025', color:'green', icon:'bi-mortarboard', url:'#'},
@@ -2912,6 +2917,43 @@ function renderTopLinks(){
   }
   function saveEvents(list){ try{ localStorage.setItem(CAL_KEY, JSON.stringify(list)); }catch(e){} }
 
+  // ===== GCAL CONFIG (Alur A) =====
+  function loadGCalConfig(){
+    try{
+      const raw = localStorage.getItem(GCAL_CONFIG_KEY);
+      if(!raw) return null;
+      const cfg = JSON.parse(raw);
+      if(!cfg || typeof cfg !== 'object') return null;
+      const calendarId = (cfg.calendarId||'').trim();
+      const apiKey = (cfg.apiKey||'').trim();
+      if(!calendarId || !apiKey) return null;
+      // dummy detection - tetap dianggap configured tapi nanti pakai dummy
+      return { calendarId: calendarId, apiKey: apiKey, isDummy: isDummyConfig(calendarId, apiKey) };
+    }catch(e){ return null; }
+  }
+  function saveGCalConfig(calendarId, apiKey){
+    try{
+      const data = { calendarId: (calendarId||'').trim(), apiKey: (apiKey||'').trim(), savedAt: Date.now() };
+      localStorage.setItem(GCAL_CONFIG_KEY, JSON.stringify(data));
+    }catch(e){}
+  }
+  function clearGCalConfig(){
+    try{
+      localStorage.removeItem(GCAL_CONFIG_KEY);
+      localStorage.removeItem(GCAL_CACHE_KEY);
+      localStorage.removeItem(GCAL_CACHE_TIME_KEY);
+    }catch(e){}
+  }
+  function isDummyConfig(calendarId, apiKey){
+    const id = (calendarId||'').toLowerCase();
+    const key = (apiKey||'').toLowerCase();
+    return !calendarId || !apiKey || id.includes('dummy') || id.includes('contoh') || key.includes('dummy') || key.includes('contoh') || key === 'AIzaSyDummyAPIKey1234567890' || id === 'dummy@group.calendar.google.com';
+  }
+  function isGCalConfigured(){
+    const cfg = loadGCalConfig();
+    return !!cfg;
+  }
+
   function createSidebar(){
     if(document.getElementById('portalSidebar')) return document.getElementById('portalSidebar');
     const sidebar = document.createElement('div');
@@ -2928,9 +2970,12 @@ function renderTopLinks(){
           <i class="bi bi-calendar-event" style="font-size:16px;color:#1e293b"></i>
           <div class="cal-title">Kegiatan Mendatang</div>
           <div style="margin-left:auto; display:flex; gap:6px;">
-            <button id="calAddBtn" title="Tambah kegiatan" style="width:28px;height:28px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;"><i class="bi bi-plus-lg" style="font-size:12px"></i></button>
+            <button id="calRefreshBtn" title="Refresh sinkron" style="width:28px;height:28px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;"><i class="bi bi-arrow-clockwise" style="font-size:12px"></i></button>
+            <button id="calSettingsBtn" title="Pengaturan Kalender" style="width:28px;height:28px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;"><i class="bi bi-gear" style="font-size:12px"></i></button>
+            <button id="calAddBtn" title="Tambah kegiatan manual" style="width:28px;height:28px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;display:none;"><i class="bi bi-plus-lg" style="font-size:12px"></i></button>
           </div>
         </div>
+        <div id="calStatus" style="display:none; margin:0 4px 10px 4px; padding:8px 10px; border-radius:8px; font-size:11px; line-height:1.4;"></div>
         <div class="cal-list" id="calList"></div>
       </div>
       <div class="quick-card" id="quickCard">
@@ -2966,11 +3011,67 @@ function renderTopLinks(){
     return true;
   }
 
-    function renderCalendar(){
+  // ===== Calendar Rendering =====
+  function showCalStatus(msg, type){
+    const el = document.getElementById('calStatus');
+    if(!el) return;
+    if(!msg){
+      el.style.display='none';
+      el.textContent='';
+      return;
+    }
+    el.style.display='block';
+    el.textContent = msg;
+    if(type==='error'){
+      el.style.background='#fef2f2'; el.style.border='1px solid #fecaca'; el.style.color='#dc2626';
+    } else if(type==='success'){
+      el.style.background='#f0fdf4'; el.style.border='1px solid #bbf7d0'; el.style.color='#16a34a';
+    } else if(type==='info'){
+      el.style.background='#eff6ff'; el.style.border='1px solid #bfdbfe'; el.style.color='#2563eb';
+    } else if(type==='loading'){
+      el.style.background='#f8fafc'; el.style.border='1px solid #e2e8f0'; el.style.color='#475569';
+    } else {
+      el.style.background='#f8fafc'; el.style.border='1px solid #e2e8f0'; el.style.color='#64748b';
+    }
+  }
+
+  function formatGCalDate(start){
+    try{
+      if(!start) return '';
+      let d;
+      if(start.dateTime){
+        d = new Date(start.dateTime);
+      } else if(start.date){
+        // all-day event
+        d = new Date(start.date);
+        // untuk all-day, jangan tampilkan jam
+        return d.toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
+      } else {
+        return '';
+      }
+      // format: 12 Sep 2025 • 10:00 WIB
+      const datePart = d.toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
+      const timePart = d.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+      return datePart + ' • ' + timePart;
+    }catch(e){
+      return start.dateTime || start.date || '';
+    }
+  }
+
+  function getGCalColor(index){
+    const colors = ['blue','green','yellow','purple'];
+    return colors[index % colors.length];
+  }
+
+  function renderManualCalendar(){
     const listEl = document.getElementById('calList');
     if(!listEl) return;
     const events = loadEvents();
     listEl.innerHTML = '';
+    // show manual add button
+    const addBtn = document.getElementById('calAddBtn');
+    if(addBtn) addBtn.style.display='grid';
+    showCalStatus('Mode manual (Google Calendar belum dikonfigurasi). Klik gear untuk hubungkan.', 'info');
     events.forEach(function(ev){
       const row = document.createElement('div');
       row.className = 'cal-row';
@@ -3048,6 +3149,292 @@ function renderTopLinks(){
     });
   }
 
+  function renderGCalList(items, isCached){
+    const listEl = document.getElementById('calList');
+    if(!listEl) return;
+    listEl.innerHTML = '';
+    const addBtn = document.getElementById('calAddBtn');
+    if(addBtn) addBtn.style.display='none';
+    
+    if(!items || items.length===0){
+      const empty = document.createElement('div');
+      empty.style.cssText='padding:16px 8px; text-align:center; color:#94a3b8; font-size:12px;';
+      empty.innerHTML = '<i class="bi bi-calendar-x" style="font-size:20px; display:block; margin-bottom:6px;"></i>Tidak ada kegiatan mendatang.';
+      listEl.appendChild(empty);
+      showCalStatus((isCached ? '[Cache] ' : '') + 'Tidak ada event dalam 30 hari ke depan. Data sinkron langsung dari Google Calendar.', 'info');
+      return;
+    }
+
+    if(isCached){
+      showCalStatus('Menampilkan cache. Sinkronisasi terakhir: ' + getCacheTimeLabel() + ' — klik refresh untuk update.', 'info');
+    } else {
+      showCalStatus('Sinkron dari Google Calendar • ' + items.length + ' kegiatan • Update otomatis tiap 5 menit', 'success');
+    }
+
+    items.forEach(function(ev, idx){
+      const row = document.createElement('div');
+      row.className = 'cal-row';
+      const a = document.createElement('a');
+      a.className = 'cal-item';
+      a.href = ev.htmlLink || '#';
+      if(ev.htmlLink){
+        a.target='_blank';
+        a.rel='noopener';
+      }
+      const dot = document.createElement('div');
+      dot.className = 'cal-dot ' + getGCalColor(idx);
+      dot.innerHTML = '<i class="bi bi-calendar-event"></i>';
+      const info = document.createElement('div');
+      info.className = 'cal-info';
+      const title = document.createElement('div');
+      title.className = 'cal-item-title';
+      title.textContent = ev.summary || '(Tanpa judul)';
+      const date = document.createElement('div');
+      date.className = 'cal-item-date';
+      date.textContent = formatGCalDate(ev.start);
+      if(ev.location){
+        date.textContent += ' • ' + ev.location;
+      }
+      info.appendChild(title);
+      info.appendChild(date);
+      const arrow = document.createElement('i');
+      arrow.className = 'bi bi-chevron-right cal-arrow';
+      a.appendChild(dot);
+      a.appendChild(info);
+      a.appendChild(arrow);
+      row.appendChild(a);
+      listEl.appendChild(row);
+    });
+  }
+
+  function getCacheTimeLabel(){
+    try{
+      const t = localStorage.getItem(GCAL_CACHE_TIME_KEY);
+      if(!t) return 'baru saja';
+      const d = new Date(parseInt(t,10));
+      return d.toLocaleString('id-ID', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+    }catch(e){ return 'baru saja'; }
+  }
+
+  function getDummyGCalEvents(){
+    const now = new Date();
+    const tomorrow = new Date(now); tomorrow.setDate(now.getDate()+1);
+    const nextWeek = new Date(now); nextWeek.setDate(now.getDate()+3);
+    const nextWeek2 = new Date(now); nextWeek2.setDate(now.getDate()+7);
+    return [
+      {summary:'Rapat Koordinasi BBGTK Jatim', start:{dateTime: tomorrow.toISOString()}, htmlLink:'#', location:'Ruang Rapat Utama'},
+      {summary:'Jadwal Diklat Mendalam (Sinkron dari GCal)', start:{dateTime: nextWeek.toISOString()}, htmlLink:'#', location:'Online via Zoom'},
+      {summary:'Pengumuman Kepegawaian - Contoh Dummy', start:{date: nextWeek2.toISOString().slice(0,10)}, htmlLink:'#', location:''}
+    ];
+  }
+
+  function fetchGCalEvents(force){
+    const cfg = loadGCalConfig();
+    if(!cfg){
+      renderManualCalendar();
+      return Promise.resolve();
+    }
+
+    if(cfg.isDummy){
+      // mode dummy untuk preview tanpa API key asli
+      showCalStatus('Mode DUMMY (contoh). Masukkan Calendar ID & API Key asli di Pengaturan untuk data real.', 'info');
+      renderGCalList(getDummyGCalEvents(), false);
+      return Promise.resolve();
+    }
+
+    const listEl = document.getElementById('calList');
+    if(listEl && !force){
+      // jika ada cache dan belum 5 menit, pakai cache dulu sambil fetch background
+      try{
+        const cachedRaw = localStorage.getItem(GCAL_CACHE_KEY);
+        const cachedTime = parseInt(localStorage.getItem(GCAL_CACHE_TIME_KEY)||'0',10);
+        if(cachedRaw && (Date.now()-cachedTime < 5*60*1000)){
+          const cached = JSON.parse(cachedRaw);
+          if(Array.isArray(cached) && cached.length>=0){
+            renderGCalList(cached, true);
+            // tetap lanjut fetch background tanpa loading
+            doFetch(false);
+            return Promise.resolve();
+          }
+        }
+      }catch(e){}
+    }
+
+    return doFetch(true);
+
+    function doFetch(showLoading){
+      if(showLoading) showCalStatus('Sinkronisasi dari Google Calendar...', 'loading');
+      const timeMin = new Date().toISOString();
+      const timeMax = new Date(Date.now()+30*24*60*60*1000).toISOString(); // 30 hari
+      const url = 'https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(cfg.calendarId) + '/events?key=' + encodeURIComponent(cfg.apiKey) + '&timeMin=' + encodeURIComponent(timeMin) + '&timeMax=' + encodeURIComponent(timeMax) + '&maxResults=10&singleEvents=true&orderBy=startTime';
+      
+      return fetch(url, {method:'GET'})
+        .then(function(res){
+          if(!res.ok){
+            return res.json().then(function(err){
+              throw new Error((err.error && err.error.message) ? err.error.message : 'HTTP '+res.status);
+            }).catch(function(){
+              throw new Error('HTTP '+res.status+' - Cek apakah kalender sudah di-share sebagai Public dan API Key benar');
+            });
+          }
+          return res.json();
+        })
+        .then(function(data){
+          const items = (data.items||[]).filter(function(it){ return it.status!=='cancelled'; });
+          try{
+            localStorage.setItem(GCAL_CACHE_KEY, JSON.stringify(items));
+            localStorage.setItem(GCAL_CACHE_TIME_KEY, String(Date.now()));
+          }catch(e){}
+          renderGCalList(items, false);
+        })
+        .catch(function(err){
+          console.error('[GCAL] fetch error', err);
+          // fallback ke cache jika ada
+          try{
+            const cachedRaw = localStorage.getItem(GCAL_CACHE_KEY);
+            if(cachedRaw){
+              const cached = JSON.parse(cachedRaw);
+              renderGCalList(cached, true);
+              showCalStatus('Gagal sinkron: ' + err.message + '. Menampilkan cache terakhir.', 'error');
+              return;
+            }
+          }catch(e2){}
+          // jika tidak ada cache, tampilkan error
+          if(listEl){
+            listEl.innerHTML = '<div style="padding:16px 8px; text-align:center; color:#dc2626; font-size:12px;"><i class="bi bi-exclamation-triangle" style="font-size:20px; display:block; margin-bottom:6px;"></i>Gagal sinkron Google Calendar<br><span style="color:#64748b; font-size:11px;">'+ (err.message||'Unknown error') +'</span><br><button id="gcalRetryBtn" style="margin-top:10px; padding:6px 12px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; font-size:11px; cursor:pointer;">Coba Lagi</button></div>';
+            const rb = document.getElementById('gcalRetryBtn');
+            if(rb) rb.addEventListener('click', function(){ fetchGCalEvents(true); });
+          }
+          showCalStatus('Error: ' + err.message, 'error');
+        });
+    }
+  }
+
+  function renderCalendar(){
+    const cfg = loadGCalConfig();
+    if(cfg){
+      fetchGCalEvents(false);
+    } else {
+      renderManualCalendar();
+    }
+  }
+
+  // ===== GCAL SETTINGS MODAL =====
+  function openGCalSettings(){
+    closeGCalSettings();
+    const existingCfg = loadGCalConfig();
+    const cfg = existingCfg || {calendarId:'', apiKey:''};
+    // kalau config null tapi ada raw di localStorage (kosong) tetap ambil
+    let rawCfg = null;
+    try{
+      const r = localStorage.getItem(GCAL_CONFIG_KEY);
+      if(r) rawCfg = JSON.parse(r);
+    }catch(e){}
+    const currentId = rawCfg ? (rawCfg.calendarId||'') : (cfg.calendarId||'');
+    const currentKey = rawCfg ? (rawCfg.apiKey||'') : (cfg.apiKey||'');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'quick-editor-overlay';
+    overlay.id = 'gcalSettingsOverlay';
+    overlay.addEventListener('click', function(e){ if(e.target===overlay) closeGCalSettings(); });
+
+    const box = document.createElement('div');
+    box.className = 'quick-editor';
+    box.style.maxWidth='480px';
+    box.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-weight:700;font-size:14px; display:flex; align-items:center; gap:8px;"><i class="bi bi-calendar-event"></i> Pengaturan Kalender</div>
+        <button type="button" id="gcalSettingsClose" style="width:28px;height:28px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;"><i class="bi bi-x-lg" style="font-size:12px"></i></button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:10px 12px; font-size:11.5px; color:#1e40af; line-height:1.5;">
+          <strong>Alur A - Publik + API Key (tanpa login tiap buka)</strong><br>
+          1. Buka Google Calendar > Settings > Kalender kamu > <em>Access permissions</em> > centang <strong>Make available to public</strong><br>
+          2. Scroll ke <em>Integrate calendar</em> > copy <strong>Calendar ID</strong><br>
+          3. Buka <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:#2563eb;">Google Cloud Console</a> > Create API Key > restrict ke Calendar API + HTTP referrer domain Vercel kamu<br>
+          4. Paste di bawah, Simpan. Data tersimpan permanen di browser ini (localStorage) sampai kamu ganti lagi.
+        </div>
+        <label style="font-size:12px;color:#475569;">Calendar ID (dari Google Calendar)
+          <div style="margin-top:4px;"><input id="gcalIdInput" type="text" placeholder="contoh: abc123@group.calendar.google.com atau dummy@group.calendar.google.com" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:12.5px;outline:none; font-family:monospace;"></div>
+        </label>
+        <label style="font-size:12px;color:#475569;">Google Calendar API Key
+          <div style="margin-top:4px; position:relative;">
+            <input id="gcalKeyInput" type="password" placeholder="contoh: AIzaSy... atau AIzaSyDummyAPIKey1234567890" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:12.5px;outline:none; font-family:monospace;">
+            <button type="button" id="gcalToggleKey" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); border:0; background:transparent; cursor:pointer; color:#64748b;"><i class="bi bi-eye"></i></button>
+          </div>
+        </label>
+        <div id="gcalTestStatus" style="display:none; padding:8px 10px; border-radius:8px; font-size:11px;"></div>
+        <div style="display:flex;gap:8px;justify-content:space-between;margin-top:4px; flex-wrap:wrap;">
+          <button type="button" id="gcalClearBtn" style="padding:8px 14px;border-radius:10px;border:1px solid #fecaca;background:#fef2f2;color:#dc2626;font-size:12.5px;cursor:pointer;">Hapus Konfigurasi</button>
+          <div style="display:flex; gap:8px; margin-left:auto;">
+            <button type="button" id="gcalCancelBtn" style="padding:8px 14px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;font-size:12.5px;cursor:pointer;">Batal</button>
+            <button type="button" id="gcalSaveBtn" style="padding:8px 16px;border-radius:10px;border:0;background:#5b67f7;color:#fff;font-size:12.5px;cursor:pointer;">Simpan & Sinkronkan</button>
+          </div>
+        </div>
+        <div style="font-size:10.5px; color:#94a3b8; line-height:1.4; border-top:1px solid #f1f5f9; padding-top:8px;">
+          Kredensial disimpan lokal di <code>localStorage</code> browser ini saja, tidak dikirim ke server manapun kecuali <code>googleapis.com</code>. Untuk mode dummy isi dengan <code>dummy@group.calendar.google.com</code> dan <code>AIzaSyDummyAPIKey1234567890</code> untuk melihat tampilan tanpa API asli.
+        </div>
+      </div>
+    `;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    const idInput = box.querySelector('#gcalIdInput');
+    const keyInput = box.querySelector('#gcalKeyInput');
+    const testStatus = box.querySelector('#gcalTestStatus');
+    idInput.value = currentId;
+    keyInput.value = currentKey;
+    setTimeout(function(){ idInput.focus(); }, 80);
+
+    box.querySelector('#gcalToggleKey').addEventListener('click', function(){
+      keyInput.type = keyInput.type==='password' ? 'text' : 'password';
+      this.innerHTML = keyInput.type==='password' ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>';
+    });
+
+    function setTestStatus(msg, type){
+      if(!msg){ testStatus.style.display='none'; return; }
+      testStatus.style.display='block';
+      testStatus.textContent = msg;
+      if(type==='error'){ testStatus.style.background='#fef2f2'; testStatus.style.border='1px solid #fecaca'; testStatus.style.color='#dc2626'; }
+      else if(type==='success'){ testStatus.style.background='#f0fdf4'; testStatus.style.border='1px solid #bbf7d0'; testStatus.style.color='#16a34a'; }
+      else { testStatus.style.background='#eff6ff'; testStatus.style.border='1px solid #bfdbfe'; testStatus.style.color='#2563eb'; }
+    }
+
+    box.querySelector('#gcalCancelBtn').addEventListener('click', closeGCalSettings);
+    box.querySelector('#gcalSettingsClose').addEventListener('click', closeGCalSettings);
+
+    box.querySelector('#gcalClearBtn').addEventListener('click', function(){
+      if(!confirm('Hapus konfigurasi Google Calendar? Kalender akan kembali ke mode manual.')) return;
+      clearGCalConfig();
+      closeGCalSettings();
+      renderManualCalendar();
+      showCalStatus('Konfigurasi dihapus. Mode manual aktif.', 'info');
+    });
+
+    box.querySelector('#gcalSaveBtn').addEventListener('click', function(){
+      const newId = idInput.value.trim();
+      const newKey = keyInput.value.trim();
+      if(!newId || !newKey){
+        setTestStatus('Calendar ID dan API Key wajib diisi.', 'error');
+        return;
+      }
+      saveGCalConfig(newId, newKey);
+      setTestStatus('Menyimpan & menguji koneksi...', 'info');
+      closeGCalSettings();
+      // langsung render
+      fetchGCalEvents(true);
+    });
+
+    idInput.addEventListener('keydown', function(e){ if(e.key==='Escape') closeGCalSettings(); });
+    keyInput.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); box.querySelector('#gcalSaveBtn').click(); } if(e.key==='Escape') closeGCalSettings(); });
+  }
+
+  function closeGCalSettings(){
+    const ex = document.getElementById('gcalSettingsOverlay');
+    if(ex) ex.remove();
+  }
+
+  // ===== Keep existing manual editor (fallback when GCal not configured) =====
   function openCalEditor(id){
     closeCalEditor();
     const events = loadEvents();
@@ -3117,7 +3504,7 @@ function renderTopLinks(){
     if(ex) ex.remove();
   }
 
-function initMotiv(){
+  function initMotiv(){
     const el = document.getElementById('motivText');
     if(!el) return;
     try{
@@ -3129,9 +3516,7 @@ function initMotiv(){
     el.addEventListener('blur', function(){ try{ localStorage.setItem(MOTIV_KEY, this.innerHTML); }catch(e){} });
   }
 
-  
-      // --- NEW: Tautan Cepat editable + tambah/hapus + export/import ---
-  const defaultQuickLinks = [
+const defaultQuickLinks = [
     {id:'q1', text:'Website BBGTK', url:'https://bbgtkjatim.kemdikbud.go.id', icon:'bi-globe'},
     {id:'q2', text:'E-Learning', url:'#', icon:'bi-mortarboard'},
     {id:'q3', text:'Layanan Kepegawaian', url:'#', icon:'bi-people'},
@@ -3492,27 +3877,72 @@ function initMotiv(){
     if(ex) ex.remove();
   }
 
+
+
   function initQuick(){
     const listEl = document.getElementById('quickList');
     if(!listEl){ setTimeout(initQuick, 300); return; }
     renderQuickLinks();
   }
 
-
   function init(){
     if(!mountSidebar()){ setTimeout(init, 300); return; }
     renderCalendar();
     initMotiv();
     initQuick();
+
     const addBtn = document.getElementById('calAddBtn');
     if(addBtn && !addBtn.dataset.bound){
       addBtn.dataset.bound='1';
       addBtn.addEventListener('click', function(e){
         e.preventDefault(); e.stopPropagation();
+        // jika GCal terkonfigurasi, add manual tidak relevan, tapi tetap buka editor manual sebagai fallback
+        if(isGCalConfigured()){
+          if(confirm('Mode Google Calendar aktif. Tambah manual hanya untuk mode manual. Buka Pengaturan Kalender?')){
+            openGCalSettings();
+          }
+          return;
+        }
         openCalEditor(null);
       });
     }
-    // Hide empty first block
+
+    const settingsBtn = document.getElementById('calSettingsBtn');
+    if(settingsBtn && !settingsBtn.dataset.bound){
+      settingsBtn.dataset.bound='1';
+      settingsBtn.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        openGCalSettings();
+      });
+    }
+
+    const refreshBtn = document.getElementById('calRefreshBtn');
+    if(refreshBtn && !refreshBtn.dataset.bound){
+      refreshBtn.dataset.bound='1';
+      refreshBtn.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        fetchGCalEvents(true);
+      });
+    }
+
+    // Auto refresh tiap 5 menit jika GCal aktif
+    setInterval(function(){
+      if(isGCalConfigured()){
+        fetchGCalEvents(false);
+      }
+    }, 5*60*1000);
+
+    // Refresh saat tab kembali aktif
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState==='visible' && isGCalConfigured()){
+        const last = parseInt(localStorage.getItem(GCAL_CACHE_TIME_KEY)||'0',10);
+        if(Date.now()-last > 60*1000){
+          fetchGCalEvents(false);
+        }
+      }
+    });
+
+    // Hide empty first block (preserve original behavior)
     const blocks = document.querySelectorAll('.sortable-block');
     blocks.forEach(function(block, idx){
       const apps = block.querySelectorAll('.app-card');
@@ -3536,6 +3966,8 @@ function initMotiv(){
   obs.observe(document.body, {childList:true, subtree:true});
 })();
 </script>
+
+
 
 
 <script>
