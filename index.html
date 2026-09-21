@@ -828,7 +828,7 @@
 .chrome-top-links{
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
 }
 .chrome-top-link{
   color: #1e2440;
@@ -1876,7 +1876,7 @@
   padding:16px 14px 12px 14px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 4px 12px rgba(16,24,40,0.03);
 }
 .quick-item{
-  display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:10px;cursor:pointer;transition:background .15s ease;text-decoration:none;color:#334155;
+  display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:10px;cursor:pointer;transition:background .15s ease;text-decoration:none;color:#334155;
 }
 .quick-item:hover{ background:#f8fafc; }
 .quick-icon{
@@ -2119,12 +2119,16 @@
 @media (max-width:768px){#portalIOFloat{top:10px;left:10px;}.io-icon-btn{width:32px;height:32px;}}
 
 
-/* === FIX: Samakan efek hover & active (tidak berpindah saat klik) === */
+
+
+/* === FIX FINAL: Samakan efek hover & active - tidak berpindah saat klik (klik = hover) === */
 .app-card:hover,
 .app-card:active,
 .app-card:focus,
 .app-card:focus-visible,
-.app-card:hover:active {
+.app-card:hover:active,
+.app-card:active:hover,
+.app-card:focus:active {
   background: #ffffff !important;
   border-color: #d8e0f0 !important;
   box-shadow: 0 4px 12px rgba(16,24,40,0.06) !important;
@@ -2132,9 +2136,72 @@
 }
 .app-card:hover .icon-wrapper,
 .app-card:active .icon-wrapper,
-.app-card:focus .icon-wrapper {
+.app-card:focus .icon-wrapper,
+.app-card:focus-visible .icon-wrapper,
+.app-card:hover:active .icon-wrapper,
+.app-card:active:hover .icon-wrapper,
+.app-card:focus:active .icon-wrapper {
   transform: none !important;
-  box-shadow: var(--shadow-xs) !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.app-card:active .icon-wrapper img,
+.app-card:hover .icon-wrapper img {
+  transform: none !important;
+}
+
+/* === FIX JARAK TAUTAN CEPAT: perkecil jarak antar nama event/kegiatan === */
+.quick-item{
+  display:flex;align-items:center;gap:8px !important;
+  padding:5px 8px !important;
+  border-radius:10px;cursor:pointer;transition:background .15s ease;text-decoration:none;color:#334155;
+}
+#quickList{
+  gap:1px !important;
+}
+.quick-row{
+  margin:0 !important;
+}
+
+
+/* === FIX DRAG: hilangkan efek berpindah saat memindahkan icon, cegah loncat === */
+.app-card.is-dragging-card,
+.app-card.is-dragging-card:hover,
+.app-card.is-dragging-card:active,
+.app-card.is-dragging-card:focus,
+.apps-row.is-dragging .app-card.is-dragging-card,
+.apps-row.is-dragging .app-card.is-dragging-card:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+  border-color: #eef1f6 !important;
+}
+.apps-row.is-dragging .app-card {
+  transition: none !important;
+}
+.apps-row.is-dragging .app-card:not(.is-dragging-card) {
+  opacity: .72 !important;
+  filter: saturate(.85) !important;
+  transform: none !important;
+}
+.app-card.is-dragging-card .icon-wrapper,
+.app-card.is-dragging-card .icon-wrapper img,
+.app-card.is-dragging-card:hover .icon-wrapper {
+  transform: none !important;
+  box-shadow: none !important;
+}
+.app-drag-placeholder {
+  background: rgba(91,103,247,0.10) !important;
+  border: 2px dashed #b7bdf2 !important;
+  border-radius: 12px !important;
+}
+/* Saat body dalam mode dragging, nonaktifkan klik link */
+body.is-app-dragging .card-link {
+  pointer-events: none !important;
+}
+body.is-app-dragging {
+  user-select: none !important;
+  cursor: grabbing !important;
 }
 
 </style>
@@ -2353,9 +2420,10 @@ var kn=()=>Math.random().toString(36).slice(2,9),Ef=[{id:"row-1",type:"row",apps
 
 <div class="chrome-top-bar" id="chromeTopBar">
   <div class="chrome-top-links" id="chromeTopLinks">
+    <a class="chrome-top-link" href="https://drive.google.com" target="_blank" rel="noopener" data-default="drive">Gdrive</a>
     <a class="chrome-top-link" href="https://mail.google.com" target="_blank" rel="noopener" data-default="gmail">Gmail</a>
     <a class="chrome-top-link" href="https://docs.google.com" target="_blank" rel="noopener" data-default="docs">Docs</a>
-    <a class="chrome-top-link" href="https://sheets.google.com" target="_blank" rel="noopener" data-default="sheets">Spreadsheet</a>
+    <a class="chrome-top-link" href="https://sheets.google.com" target="_blank" rel="noopener" data-default="sheets">SSheet</a>
   </div>
   <button class="chrome-apps-btn" id="chromeAppsBtn" title="Google apps & favorites" aria-label="Open favorites">
     <div class="apps-9dot" aria-hidden="true">
@@ -2439,12 +2507,25 @@ var kn=()=>Math.random().toString(36).slice(2,9),Ef=[{id:"row-1",type:"row",apps
   function loadTopLinks(){
     try{
       const raw = localStorage.getItem(TOP_LINKS_KEY);
-      if(raw) return JSON.parse(raw);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        if(Array.isArray(parsed) && parsed.length>0){
+          // Migrasi: jika data lama belum ada Gdrive atau masih pakai Spreadsheet, paksa pakai default baru sesuai request
+          const hasGdrive = parsed.some(function(x){ return (x.title||'').toLowerCase()==='gdrive' || (x.url||'').includes('drive.google.com'); });
+          const hasFour = parsed.length===4;
+          const hasSSheet = parsed.some(function(x){ return (x.title||'').toLowerCase()==='ssheet'; });
+          if(hasGdrive && hasFour && hasSSheet){
+            return parsed;
+          }
+          // jika tidak sesuai, akan fallback ke default baru di bawah
+        }
+      }
     }catch(e){}
     return [
+      {title:'Gdrive', url:'https://drive.google.com'},
       {title:'Gmail', url:'https://mail.google.com'},
       {title:'Docs', url:'https://docs.google.com'},
-      {title:'Spreadsheet', url:'https://sheets.google.com'}
+      {title:'SSheet', url:'https://sheets.google.com'}
     ];
   }
   function saveTopLinks(list){
@@ -3051,7 +3132,7 @@ function renderTopLinks(){
           </div>
           <input type="file" id="quickImportFile" accept=".json,application/json" style="display:none" />
         </div>
-        <div style="display:flex; flex-direction:column; gap:2px;" id="quickList">
+        <div style="display:flex; flex-direction:column; gap:1px;" id="quickList">
           <!-- rendered dynamically by renderQuickLinks() -->
         </div>
       </div>
@@ -4842,6 +4923,77 @@ setTimeout(()=>{ upgradeFavsStorage(); upgradeStoredBlocks(); enhanceImages(); }
   window.addEventListener('load', function(){ setTimeout(updateEl, 500); setTimeout(updateEl, 1500); });
 
   window.__updateHeroDate = updateEl;
+})();
+</script>
+
+
+<script>
+// === FIX DRAG: cegah link terbuka saat geser, tetap mudah pindah antar row ===
+(function(){
+  let dragStart = null;
+  let isDragging = false;
+  const THRESHOLD = 8; // px, toleransi gerak sebelum dianggap drag
+
+  document.addEventListener('pointerdown', function(e){
+    const card = e.target.closest('.app-card');
+    if(!card) return;
+    // hanya untuk card-link atau area card
+    if(!e.target.closest('.card-link') && !card.contains(e.target)) return;
+    dragStart = {x: e.clientX, y: e.clientY, time: Date.now()};
+    isDragging = false;
+  }, true);
+
+  document.addEventListener('pointermove', function(e){
+    if(!dragStart) return;
+    const dx = Math.abs(e.clientX - dragStart.x);
+    const dy = Math.abs(e.clientY - dragStart.y);
+    if(dx > THRESHOLD || dy > THRESHOLD){
+      if(!isDragging){
+        isDragging = true;
+        document.body.classList.add('is-app-dragging');
+        // console.log('[drag] start dragging');
+      }
+    }
+  }, {passive:true, capture:true});
+
+  document.addEventListener('pointerup', function(e){
+    if(!dragStart) return;
+    if(isDragging){
+      // beri jeda agar click event yang menyusul bisa dicegah
+      setTimeout(function(){
+        dragStart = null;
+        isDragging = false;
+        document.body.classList.remove('is-app-dragging');
+      }, 150);
+    }else{
+      dragStart = null;
+      document.body.classList.remove('is-app-dragging');
+    }
+  }, true);
+
+  // Cegah klik link jika baru saja drag
+  document.addEventListener('click', function(e){
+    const link = e.target.closest('.card-link');
+    if(!link) return;
+    if(isDragging || document.body.classList.contains('is-app-dragging')){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      // console.log('[drag] click prevented');
+      return false;
+    }
+    // cek jarak jika dragStart masih ada
+    if(dragStart){
+      const dx = Math.abs(e.clientX - dragStart.x);
+      const dy = Math.abs(e.clientY - dragStart.y);
+      if(dx > THRESHOLD || dy > THRESHOLD){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return false;
+      }
+    }
+  }, true);
 })();
 </script>
 
