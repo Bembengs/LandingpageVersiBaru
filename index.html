@@ -2021,6 +2021,50 @@
   box-shadow:0 1px 3px rgba(0,0,0,0.06);
   z-index:2;
 }
+
+/* === Fix delete icon untuk Tautan Cepat - tambahan === */
+.quick-actions{
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+  display:flex;
+  gap:6px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .15s ease;
+  z-index:2;
+}
+.quick-row:hover .quick-actions,
+.quick-row:focus-within .quick-actions{
+  opacity:1;
+  pointer-events:auto;
+}
+.quick-action-btn{
+  width:26px;height:26px;
+  border-radius:8px;
+  border:1px solid #e2e8f0;
+  background:#ffffff;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  transition:all .15s ease;
+  box-shadow:0 1px 3px rgba(0,0,0,0.06);
+}
+.quick-action-btn:hover{
+  background:#f8fafc;
+  border-color:#cbd5e1;
+  transform:translateY(-1px);
+}
+.quick-action-btn.danger:hover{
+  background:#fef2f2;
+  border-color:#fecaca;
+  color:#dc2626;
+}
+/* sembunyikan style lama jika masih ada */
+.quick-edit-btn{ display:none !important; }
+
+
 .quick-row:hover .quick-edit-btn,
 .quick-row:focus-within .quick-edit-btn{
   opacity:1;
@@ -2204,6 +2248,177 @@ body.is-app-dragging {
   cursor: grabbing !important;
 }
 
+</style>
+<style>
+/* === GRUP CEPAT SLIDE CARD - di bawah motiv === */
+#grupCepatCard{
+  background:#ffffff;
+  border:1px solid #eef1f6;
+  border-radius:16px;
+  padding:16px 14px 12px 14px;
+  box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 4px 12px rgba(16,24,40,0.03);
+  transition: box-shadow .22s ease, transform .22s ease;
+  order:2 !important;
+}
+#grupCepatCard:hover{
+  box-shadow:0 4px 16px rgba(16,24,40,0.08), 0 12px 24px rgba(16,24,40,0.06);
+}
+.portal-sidebar .motiv-card{ order:1 !important; }
+.portal-sidebar .cal-card{ order:3 !important; }
+.portal-sidebar .quick-card{ order:4 !important; }
+
+.grup-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  cursor:pointer;
+  user-select:none;
+}
+.grup-header-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex:1;
+  min-width:0;
+}
+.grup-title{
+  font-weight:600;
+  font-size:14.5px;
+  color:#1e293b;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  flex:1;
+  transition: color .15s;
+}
+.grup-title:hover{ color:#0f172a; }
+.grup-edit-inline{
+  width:24px;height:24px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .15s, transform .15s;
+}
+.grup-header:hover .grup-edit-inline{
+  opacity:1;pointer-events:auto;
+}
+.grup-header-btn{
+  width:30px;height:30px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;transition: all .15s;
+}
+.grup-header-btn:hover{
+  background:#f8fafc;transform:translateY(-1px);box-shadow:0 2px 6px rgba(15,23,42,0.08);
+}
+.grup-header-btn.danger:hover{
+  background:#fef2f2;border-color:#fecaca;color:#dc2626;
+}
+
+.grup-links-wrapper{
+  max-height:0;
+  opacity:0;
+  overflow:hidden;
+  pointer-events:none;
+  transform:translateY(-6px);
+  transition: max-height .38s cubic-bezier(.2,.8,.2,1), opacity .28s ease, transform .28s ease;
+  margin-top:0;
+}
+#grupCepatCard:hover .grup-links-wrapper,
+#grupCepatCard.is-pinned .grup-links-wrapper{
+  max-height:900px;
+  opacity:1;
+  pointer-events:auto;
+  transform:translateY(0);
+  margin-top:14px;
+}
+.grup-links-list{
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+}
+.grup-link-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:6px 4px;
+  border-radius:10px;
+  text-decoration:none;
+  color:#334155;
+  font-size:13.5px;
+  transition: background .15s, color .15s;
+  position:relative;
+}
+.grup-link-item:hover{
+  background:#f8fafc;
+  color:#0f172a;
+}
+.grup-link-icon{
+  width:36px;height:36px;border-radius:50%;background:#f8fafc;display:grid;place-items:center;border:1px solid #f1f5f9;flex-shrink:0;
+}
+.grup-link-text{
+  flex:1;
+  min-width:0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.grup-link-chevron{
+  color:#cbd5e1;font-size:12px;flex-shrink:0;
+}
+.grup-link-actions{
+  display:flex;gap:4px;opacity:0;pointer-events:none;transition:opacity .12s;margin-left:auto;
+}
+.grup-link-item:hover .grup-link-actions{
+  opacity:1;pointer-events:auto;
+}
+.icon-mini{
+  width:26px;height:26px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;transition: all .12s;
+}
+.icon-mini:hover{ background:#f8fafc; border-color:#cbd5e1; }
+.icon-mini.danger:hover{ background:#fef2f2; border-color:#fecaca; color:#dc2626; }
+
+.grup-empty{
+  padding:18px 12px;text-align:center;color:#94a3b8;font-size:12.5px;line-height:1.5;
+}
+.grup-add-link{
+  margin-top:8px;
+  width:100%;
+  padding:9px 12px;
+  border:1px dashed #e2e8f0;
+  border-radius:10px;
+  background:#fcfdff;
+  color:#64748b;
+  font-size:12.5px;
+  cursor:pointer;
+  transition: all .15s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.grup-add-link:hover{
+  background:#f8fafc;
+  border-color:#cbd5e1;
+  color:#334155;
+}
+
+/* modal */
+.grup-modal-overlay{
+  position:fixed;inset:0;background:rgba(15,23,42,0.38);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;
+}
+.grup-modal{
+  background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(15,23,42,0.28);width:100%;max-width:420px;padding:18px 18px 16px;border:1px solid #eef2f7;
+}
+.grup-modal-title{font-weight:600;font-size:15px;color:#0f172a;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+.grup-input{
+  width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;outline:none;transition:border-color .15s;
+}
+.grup-input:focus{border-color:#5b67f7;box-shadow:0 0 0 3px rgba(91,103,247,0.12);}
+.grup-modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
+.btn-primary{padding:8px 16px;border-radius:10px;border:0;background:#5b67f7;color:#fff;font-size:13px;cursor:pointer;font-weight:500;}
+.btn-secondary{padding:8px 14px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;font-size:13px;cursor:pointer;}
+.btn-danger{padding:8px 14px;border-radius:10px;border:1px solid #fecaca;background:#fef2f2;color:#dc2626;font-size:13px;cursor:pointer;}
+
+@media (max-width:768px){
+  .grup-links-wrapper{
+    max-height:900px;opacity:1;pointer-events:auto;transform:none;margin-top:12px;
+  }
+  #grupCepatCard{ order:2 !important; }
+}
 </style>
 </head>
 <body>
@@ -3126,11 +3341,8 @@ function renderTopLinks(){
           <i class="bi bi-link-45deg" style="font-size:16px;color:#1e293b"></i>
           <div class="cal-title">Tautan Cepat</div>
           <div style="margin-left:auto; display:flex; gap:6px;">
-            <button id="quickImportBtn" title="Impor JSON" style="width:28px;height:28px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;"><i class="bi bi-upload" style="font-size:12px"></i></button>
-            <button id="quickExportBtn" title="Ekspor JSON" style="width:28px;height:28px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;"><i class="bi bi-download" style="font-size:12px"></i></button>
             <button id="quickAddBtn" title="Tambah tautan" style="width:28px;height:28px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;cursor:pointer;"><i class="bi bi-plus-lg" style="font-size:12px"></i></button>
           </div>
-          <input type="file" id="quickImportFile" accept=".json,application/json" style="display:none" />
         </div>
         <div style="display:flex; flex-direction:column; gap:1px;" id="quickList">
           <!-- rendered dynamically by renderQuickLinks() -->
@@ -3991,18 +4203,43 @@ const defaultQuickLinks = [
         }
       });
 
+      const actions = document.createElement('div');
+      actions.className = 'quick-actions';
+
       const editBtn = document.createElement('button');
       editBtn.type = 'button';
-      editBtn.className = 'quick-edit-btn';
+      editBtn.className = 'quick-action-btn';
       editBtn.title = 'Edit tautan';
-      editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+      editBtn.innerHTML = '<i class="bi bi-pencil" style="font-size:11px"></i>';
       editBtn.addEventListener('click', function(e){
         e.preventDefault(); e.stopPropagation();
         openQuickEditor(item.id);
       });
 
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'quick-action-btn danger';
+      delBtn.title = 'Hapus tautan';
+      delBtn.innerHTML = '<i class="bi bi-trash" style="font-size:11px"></i>';
+      delBtn.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        if(!confirm('Hapus tautan "'+ (item.text||'') +'" beserta linknya?')) return;
+        try{
+          const all = loadQuickLinks();
+          const filtered = all.filter(function(x){ return x.id !== item.id; });
+          saveQuickLinks(filtered);
+          renderQuickLinks();
+        }catch(err){
+          console.error(err);
+          alert('Gagal menghapus: '+err.message);
+        }
+      });
+
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+
       row.appendChild(a);
-      row.appendChild(editBtn);
+      row.appendChild(actions);
       listEl.appendChild(row);
     });
     bindQuickHeaderButtons();
@@ -4013,27 +4250,6 @@ const defaultQuickLinks = [
     if(addBtn && !addBtn.dataset.bound){
       addBtn.dataset.bound='1';
       addBtn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); openQuickEditor(null); });
-    }
-    const exportBtn = document.getElementById('quickExportBtn');
-    if(exportBtn && !exportBtn.dataset.bound){
-      exportBtn.dataset.bound='1';
-      exportBtn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); exportQuickLinks(); });
-    }
-    const importBtn = document.getElementById('quickImportBtn');
-    const fileInput = document.getElementById('quickImportFile');
-    if(importBtn && !importBtn.dataset.bound){
-      importBtn.dataset.bound='1';
-      importBtn.addEventListener('click', function(e){
-        e.preventDefault(); e.stopPropagation();
-        if(fileInput) fileInput.click();
-      });
-    }
-    if(fileInput && !fileInput.dataset.bound){
-      fileInput.dataset.bound='1';
-      fileInput.addEventListener('change', function(){
-        if(this.files && this.files[0]) handleImportFile(this.files[0]);
-        this.value=''; // reset
-      });
     }
   }
 
@@ -4286,23 +4502,57 @@ const defaultQuickLinks = [
   function safeParseArray(k){ const v=safeParse(k); return Array.isArray(v)?v:[]; }
   function downloadJSON(d,f){const j=JSON.stringify(d,null,2);const b=new Blob([j],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=f;document.body.appendChild(a);a.click();setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(u)},600)}
   function exportAllPortal(){
-    // Pastikan selalu array, bukan null, agar file backup valid
-    const blocksRaw = safeParse(BLOCKS_KEY);
-    const quickRaw = safeParse(QUICK_KEY);
-    const favRaw = safeParse(FAVS_KEY);
-    const calRaw = safeParse(CAL_KEY_LOCAL);
+    // Versi 4 - Unified backup mencakup semua segmen termasuk Grup Cepat
+    function sp(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
+    const blocksRaw = sp(BLOCKS_KEY);
+    const quickRaw = sp(QUICK_KEY);
+    const favRaw = sp(FAVS_KEY);
+    const calRaw = sp(CAL_KEY_LOCAL);
+    const motivRaw = sp(MOTIV_KEY);
+    const gcalConfigRaw = sp(GCAL_CONFIG_KEY);
+    const gcalHiddenRaw = sp('gcal_hidden_ids_v1');
+    const topLinksRaw = sp('chrome-top-links-v1');
+    const rowTitlesRaw = sp(ROW_TITLES_KEY);
+    const heroRaw = sp(HERO_KEY);
+    const portalBannersRaw = sp('portal-banners') || sp('portal-banner');
+    const grupRaw = sp('grup_cepat_slide_v2');
+    const grupActiveRaw = sp('grup_cepat_slide_active_v2');
+    const grupPinnedRaw = sp('grup_cepat_slide_pinned_v2');
+
     const payload={
-      version:3,
+      version:4,
       exportedAt:new Date().toISOString(),
-      app:'anda-portal-lengkap',
+      app:'landing-page-rahman-lengkap-v4',
+      // legacy top-level for backward compat
       blocks: Array.isArray(blocksRaw) ? blocksRaw : [],
-      hero: safeParse(HERO_KEY),
+      hero: heroRaw,
       quickLinks: Array.isArray(quickRaw) ? quickRaw : [],
-      rowTitles: safeParse(ROW_TITLES_KEY),
-      favorites: Array.isArray(favRaw) ? favRaw : (favRaw || null),
-      calendar: Array.isArray(calRaw) ? calRaw : (calRaw || null)
+      rowTitles: rowTitlesRaw,
+      favorites: favRaw,
+      calendar: calRaw,
+      // new unified data container
+      data:{
+        blocks: Array.isArray(blocksRaw) ? blocksRaw : [],
+        hero: heroRaw,
+        rowTitles: rowTitlesRaw,
+        quickLinks: Array.isArray(quickRaw) ? quickRaw : [],
+        grupCepat: {
+          groups: Array.isArray(grupRaw) ? grupRaw : [],
+          active: typeof grupActiveRaw === 'number' ? grupActiveRaw : 0,
+          pinned: !!grupPinnedRaw
+        },
+        calendar: {
+          events: Array.isArray(calRaw) ? calRaw : [],
+          hiddenIds: Array.isArray(gcalHiddenRaw) ? gcalHiddenRaw : []
+        },
+        motiv: motivRaw,
+        gcalConfig: gcalConfigRaw,
+        chromeFavs: favRaw,
+        chromeTopLinks: topLinksRaw,
+        portalBanners: portalBannersRaw
+      }
     };
-    downloadJSON(payload,'portal-anda-lengkap-'+new Date().toISOString().slice(0,10)+'.json');
+    downloadJSON(payload,'portal-lengkap-v4-'+new Date().toISOString().slice(0,10)+'.json');
   }
   function isBlocksArray(arr){
     return Array.isArray(arr) && arr.length>0 && arr[0] && typeof arr[0].type==='string';
@@ -4315,133 +4565,187 @@ const defaultQuickLinks = [
     reader.onload=function(e){
       try{
         const parsed=JSON.parse(e.target.result);
-        let blocks=null;
-        let quick=null;
-        let hero=null;
-        let titles=null;
-        let favs=null;
-        let cal=null;
+        // helper safe
+        function sp(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
+        let blocks=null, quick=null, hero=null, titles=null, favs=null, cal=null;
+        let motiv=null, gcalConfig=null, hiddenIds=null, topLinks=null, grupCepat=null, portalBanners=null;
 
-        // --- Deteksi format file ---
         if(Array.isArray(parsed)){
-          if(isBlocksArray(parsed)){
+          if(parsed.length>0 && parsed[0] && typeof parsed[0].type==='string'){
             blocks=parsed;
-          }else if(isQuickLinksArray(parsed) || (parsed.length>0 && parsed[0].text)){
+          }else if(parsed.length>0 && parsed[0] && (parsed[0].text || parsed[0].url)){
             quick=parsed;
-          }else if(parsed.length===0){
-            // kosong, anggap tidak ada
-            blocks=[];
-          }else{
-            // fallback: coba tebak
-            if(parsed[0] && parsed[0].type) blocks=parsed;
-            else quick=parsed;
           }
         }else if(parsed && typeof parsed==='object'){
-          // Format global lengkap v3
-          if(Array.isArray(parsed.blocks)) blocks=parsed.blocks;
-          // Format backup-landing.json {hero, blocks}
-          else if(parsed.blocks && Array.isArray(parsed.blocks)) blocks=parsed.blocks;
-
-          // quickLinks bisa ada di berbagai tempat
-          if(Array.isArray(parsed.quickLinks)) quick=parsed.quickLinks;
-          else if(parsed.quickLinks && Array.isArray(parsed.quickLinks.data)) quick=parsed.quickLinks.data;
-
-          // Format tautan-cepat backup {app:'tautan-cepat-anda', data:[...]}
-          if(!quick && Array.isArray(parsed.data)){
-            if(parsed.data.length>0 && parsed.data[0] && parsed.data[0].text){
+          // v4 format
+          if(parsed.version===4 && parsed.data){
+            const d=parsed.data;
+            if(Array.isArray(d.blocks)) blocks=d.blocks;
+            if(d.hero) hero=d.hero;
+            if(d.rowTitles) titles=d.rowTitles;
+            if(Array.isArray(d.quickLinks)) quick=d.quickLinks;
+            if(d.grupCepat) grupCepat=d.grupCepat;
+            if(d.calendar){
+              if(Array.isArray(d.calendar.events)) cal=d.calendar.events;
+              else if(Array.isArray(d.calendar)) cal=d.calendar;
+              if(Array.isArray(d.calendar.hiddenIds)) hiddenIds=d.calendar.hiddenIds;
+            }
+            if(d.motiv) motiv=d.motiv;
+            if(d.gcalConfig) gcalConfig=d.gcalConfig;
+            if(d.chromeFavs) favs=d.chromeFavs;
+            if(d.chromeTopLinks) topLinks=d.chromeTopLinks;
+            if(d.portalBanners) portalBanners=d.portalBanners;
+            // also allow calendar at top level for compat
+            if(!cal && Array.isArray(d.calendar)) cal=d.calendar;
+          }else{
+            // v3 legacy
+            if(Array.isArray(parsed.blocks)) blocks=parsed.blocks;
+            if(Array.isArray(parsed.quickLinks)) quick=parsed.quickLinks;
+            else if(parsed.quickLinks && Array.isArray(parsed.quickLinks.data)) quick=parsed.quickLinks.data;
+            if(parsed.hero) hero=parsed.hero;
+            if(parsed.rowTitles) titles=parsed.rowTitles;
+            if(parsed.favorites) favs=parsed.favorites;
+            if(parsed.calendar) cal=parsed.calendar;
+            // quickLinks wrapper {app:'tautan-cepat-anda', data:[...]}
+            if(!quick && Array.isArray(parsed.data)){
+              if(parsed.data.length>0 && parsed.data[0] && parsed.data[0].text) quick=parsed.data;
+              else if(parsed.data.length>0 && parsed.data[0] && parsed.data[0].type) blocks=parsed.data;
+            }
+            if(!blocks && !quick && parsed.app && String(parsed.app).includes('tautan-cepat') && Array.isArray(parsed.data)){
               quick=parsed.data;
-            }else if(parsed.data.length>0 && parsed.data[0] && parsed.data[0].type){
-              if(!blocks) blocks=parsed.data;
             }
           }
-
-          // Jika file adalah backup tautan cepat tapi dibungkus {data: [...]} dan app mengandung tautan-cepat
-          if(!blocks && !quick && parsed.app && String(parsed.app).includes('tautan-cepat') && Array.isArray(parsed.data)){
-            quick=parsed.data;
-          }
-
-          // hero, titles, favs, cal
-          if(parsed.hero) hero=parsed.hero;
-          if(parsed.rowTitles) titles=parsed.rowTitles;
-          if(parsed.favorites) favs=parsed.favorites;
-          if(parsed.calendar) cal=parsed.calendar;
-          // old backup-landing juga punya hero
-          if(!hero && parsed.hero) hero=parsed.hero;
         }
 
-        // Validasi minimal
-        const hasBlocks = Array.isArray(blocks);
-        const hasQuick = Array.isArray(quick);
-        if(!hasBlocks && !hasQuick && !hero && !titles && !favs && !cal){
-          alert('Import gagal: File tidak mengandung data portal yang valid.\nPastikan file adalah hasil ekspor portal lengkap, backup-landing, atau tautan cepat.');
+        const hasBlocks = Array.isArray(blocks) && blocks.length>0;
+        const hasQuick = Array.isArray(quick) && quick.length>0;
+        const hasGrup = grupCepat && Array.isArray(grupCepat.groups) && grupCepat.groups.length>0;
+        const hasCal = Array.isArray(cal) && cal.length>0;
+        const hasMotiv = !!motiv;
+        const hasGcalConfig = !!gcalConfig;
+        const hasFavs = !!favs;
+        const hasTopLinks = !!topLinks;
+
+        if(!hasBlocks && !hasQuick && !hasGrup && !hasCal && !hasMotiv && !hasGcalConfig && !hasFavs && !hasTopLinks && !hero && !titles && !portalBanners){
+          alert('Import gagal: File tidak mengandung data portal yang valid.');
           return;
         }
 
-        const mode=confirm('OK = GABUNG, Cancel = GANTI SEMUA')?'merge':'replace';
-        const totalBlocks = hasBlocks ? blocks.length : 0;
-        const totalQuick = hasQuick ? quick.length : 0;
-        if(!confirm('Import Mode: '+mode.toUpperCase()+'\nBlok Icon: '+totalBlocks+'\nTautan Cepat: '+totalQuick+'\nLanjut?')) return;
+        // Tampilkan modal selektif jika v4, jika tidak pakai confirm sederhana
+        if(parsed.version===4){
+          // buat overlay seleksi
+          const overlay=document.createElement('div');
+          overlay.id='importSelectOverlay';
+          overlay.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.45);backdrop-filter:blur(8px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+          const box=document.createElement('div');
+          box.style.cssText='background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(15,23,42,0.3);width:100%;max-width:460px;padding:20px;border:1px solid #eef2f7;max-height:85vh;overflow:auto;';
+          const items=[];
+          if(hasBlocks) items.push({key:'blocks', label:'Card Icon (Aktual, Kantor, dll)', count: blocks.length+' blok'});
+          if(hasQuick) items.push({key:'quick', label:'Tautan Cepat', count: quick.length+' tautan'});
+          if(hasGrup) items.push({key:'grup', label:'Grup Cepat', count: grupCepat.groups.length+' grup'});
+          if(hasCal) items.push({key:'cal', label:'Kegiatan Mendatang', count: cal.length+' kegiatan'});
+          if(hasMotiv || hero || titles) items.push({key:'ui', label:'UI (Motiv, Hero, Judul Baris)', count: ''});
+          if(hasGcalConfig || hasFavs || hasTopLinks) items.push({key:'settings', label:'Pengaturan (GCal, Favorit, Top Links)', count: ''});
 
-        if(hasBlocks){
-          if(mode==='replace'){
-            localStorage.setItem(BLOCKS_KEY,JSON.stringify(blocks));
-          }else{
-            const exRaw=safeParse(BLOCKS_KEY);
-            const ex=Array.isArray(exRaw)?exRaw:[];
-            const merged=ex.slice();
-            const ids=new Set(ex.map(function(b){ return b && b.id; }).filter(Boolean));
-            blocks.forEach(function(nb){
-              if(!nb || !nb.id){ merged.push(nb); return; }
-              if(!ids.has(nb.id)){
-                merged.push(nb);
-              }else{
-                const idx=merged.findIndex(function(b){ return b.id===nb.id; });
-                if(idx>=0 && merged[idx].type==='row' && nb.type==='row'){
-                  const map=new Map();
-                  (merged[idx].apps||[]).forEach(function(a){ if(a && a.title && a.url) map.set((a.title+'|'+a.url).toLowerCase(), a); });
-                  (nb.apps||[]).forEach(function(a){ if(!a || !a.title || !a.url) return; const k=(a.title+'|'+a.url).toLowerCase(); if(!map.has(k)) map.set(k,a); });
-                  merged[idx].apps=Array.from(map.values());
+          const checklistHtml = items.map(it=>`<label style="display:flex;align-items:center;gap:10px;padding:10px 8px;border:1px solid #f1f5f9;border-radius:10px;margin-bottom:8px;cursor:pointer;"><input type="checkbox" checked data-key="${it.key}" style="width:18px;height:18px;"><div style="flex:1"><div style="font-size:13px;font-weight:500;color:#1e293b;">${it.label}</div><div style="font-size:11px;color:#94a3b8;">${it.count}</div></div></label>`).join('');
+
+          box.innerHTML = `<div style="font-weight:700;font-size:16px;margin-bottom:4px;">Impor Selektif - Portal v4</div><div style="font-size:12px;color:#64748b;margin-bottom:14px;">Pilih segmen yang ingin dipulihkan. File: ${parsed.app||''} - ${new Date(parsed.exportedAt||Date.now()).toLocaleString('id-ID')}</div><div>${checklistHtml}</div><div style="margin-top:14px;display:flex;gap:8px;"><label style="font-size:12px;display:flex;align-items:center;gap:6px;"><input type="radio" name="importMode" value="merge" checked> Gabung</label><label style="font-size:12px;display:flex;align-items:center;gap:6px;"><input type="radio" name="importMode" value="replace"> Ganti Semua</label></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;"><button id="importCancel" style="padding:8px 14px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;font-size:13px;cursor:pointer;">Batal</button><button id="importDo" style="padding:8px 18px;border-radius:10px;border:0;background:#5b67f7;color:#fff;font-size:13px;cursor:pointer;font-weight:600;">Impor Terpilih</button></div>`;
+          overlay.appendChild(box);
+          document.body.appendChild(overlay);
+
+          function close(){ const el=document.getElementById('importSelectOverlay'); if(el) el.remove(); }
+
+          box.querySelector('#importCancel').addEventListener('click', close);
+          overlay.addEventListener('click', function(e){ if(e.target===overlay) close(); });
+
+          box.querySelector('#importDo').addEventListener('click', function(){
+            const mode = box.querySelector('input[name="importMode"]:checked').value;
+            const checked = Array.from(box.querySelectorAll('input[type="checkbox"][data-key]')).filter(i=>i.checked).map(i=>i.dataset.key);
+
+            try{
+              if(checked.includes('blocks')){
+                if(mode==='replace') localStorage.setItem(BLOCKS_KEY, JSON.stringify(blocks));
+                else{
+                  const ex=sp(BLOCKS_KEY); const exArr=Array.isArray(ex)?ex:[]; const merged=exArr.slice(); const ids=new Set(exArr.map(b=>b&&b.id).filter(Boolean));
+                  blocks.forEach(nb=>{ if(!nb||!nb.id){ merged.push(nb); return; } if(!ids.has(nb.id)) merged.push(nb); });
+                  localStorage.setItem(BLOCKS_KEY, JSON.stringify(merged));
                 }
               }
-            });
+              if(checked.includes('quick')){
+                if(mode==='replace') localStorage.setItem(QUICK_KEY, JSON.stringify(quick));
+                else{
+                  const exQ=sp(QUICK_KEY); const exArr=Array.isArray(exQ)?exQ:[]; const map=new Map();
+                  exArr.forEach(x=>{ if(x&&x.text&&x.url) map.set((x.text+'|'+x.url).toLowerCase(), x); });
+                  quick.forEach(x=>{ if(!x||!x.text||!x.url) return; const k=(x.text+'|'+x.url).toLowerCase(); if(!map.has(k)) map.set(k,x); });
+                  localStorage.setItem(QUICK_KEY, JSON.stringify(Array.from(map.values())));
+                }
+              }
+              if(checked.includes('grup')){
+                localStorage.setItem('grup_cepat_slide_v2', JSON.stringify(grupCepat.groups));
+                if(typeof grupCepat.active==='number') localStorage.setItem('grup_cepat_slide_active_v2', JSON.stringify(grupCepat.active));
+                if(typeof grupCepat.pinned==='boolean') localStorage.setItem('grup_cepat_slide_pinned_v2', JSON.stringify(grupCepat.pinned?1:0));
+              }
+              if(checked.includes('cal')){
+                if(mode==='replace') localStorage.setItem(CAL_KEY_LOCAL, JSON.stringify(cal));
+                else{
+                  const exC=sp(CAL_KEY_LOCAL); const exArr=Array.isArray(exC)?exC:[]; const merged=exArr.concat(cal.filter(nc=>!exArr.some(ec=>ec.id===nc.id)));
+                  localStorage.setItem(CAL_KEY_LOCAL, JSON.stringify(merged));
+                }
+                if(hiddenIds) localStorage.setItem('gcal_hidden_ids_v1', JSON.stringify(hiddenIds));
+              }
+              if(checked.includes('ui')){
+                if(hero) localStorage.setItem(HERO_KEY, JSON.stringify(hero));
+                if(titles) localStorage.setItem(ROW_TITLES_KEY, JSON.stringify(titles));
+                if(motiv) localStorage.setItem(MOTIV_KEY, JSON.stringify(motiv));
+                if(portalBanners) localStorage.setItem('portal-banners', JSON.stringify(portalBanners));
+              }
+              if(checked.includes('settings')){
+                if(gcalConfig) localStorage.setItem(GCAL_CONFIG_KEY, JSON.stringify(gcalConfig));
+                if(favs) localStorage.setItem(FAVS_KEY, JSON.stringify(favs));
+                if(topLinks) localStorage.setItem('chrome-top-links-v1', JSON.stringify(topLinks));
+              }
+              alert('Impor selektif berhasil! Reload...');
+              location.reload();
+            }catch(err){
+              console.error(err); alert('Gagal impor: '+err.message);
+            }
+          });
+          return;
+        }
+
+        // Fallback untuk file lama v3 - pakai confirm lama
+        const mode=confirm('OK = GABUNG, Cancel = GANTI SEMUA')?'merge':'replace';
+        if(!confirm('Import Mode: '+mode.toUpperCase()+' Lanjut?')) return;
+        if(Array.isArray(blocks)){
+          if(mode==='replace') localStorage.setItem(BLOCKS_KEY,JSON.stringify(blocks));
+          else{
+            const exRaw=sp(BLOCKS_KEY); const ex=Array.isArray(exRaw)?exRaw:[]; const merged=ex.slice(); const ids=new Set(ex.map(function(b){ return b && b.id; }).filter(Boolean));
+            blocks.forEach(function(nb){ if(!nb || !nb.id){ merged.push(nb); return; } if(!ids.has(nb.id)) merged.push(nb); });
             localStorage.setItem(BLOCKS_KEY,JSON.stringify(merged));
           }
         }
-
-        if(hasQuick){
+        if(Array.isArray(quick)){
           const qMode=confirm('Tautan Cepat: OK=GABUNG, Cancel=GANTI')?'merge':'replace';
-          if(qMode==='replace'){
-            localStorage.setItem(QUICK_KEY,JSON.stringify(quick));
-          }else{
-            const exQRaw=safeParse(QUICK_KEY);
-            const exQ=Array.isArray(exQRaw)?exQRaw:[];
-            const mapQ=new Map();
+          if(qMode==='replace') localStorage.setItem(QUICK_KEY,JSON.stringify(quick));
+          else{
+            const exQRaw=sp(QUICK_KEY); const exQ=Array.isArray(exQRaw)?exQRaw:[]; const mapQ=new Map();
             exQ.forEach(function(x){ if(x && x.text && x.url) mapQ.set((x.text+'|'+x.url).toLowerCase(), x); });
             const quickArr = Array.isArray(quick) ? quick : (quick.data||[]);
-            quickArr.forEach(function(x){
-              if(!x || !x.text || !x.url) return;
-              const k=(x.text+'|'+x.url).toLowerCase();
-              if(!mapQ.has(k)) mapQ.set(k,x);
-            });
+            quickArr.forEach(function(x){ if(!x || !x.text || !x.url) return; const k=(x.text+'|'+x.url).toLowerCase(); if(!mapQ.has(k)) mapQ.set(k,x); });
             localStorage.setItem(QUICK_KEY,JSON.stringify(Array.from(mapQ.values())));
           }
         }
-
         if(hero) localStorage.setItem(HERO_KEY,JSON.stringify(hero));
         if(titles) localStorage.setItem(ROW_TITLES_KEY,JSON.stringify(titles));
         if(favs) localStorage.setItem(FAVS_KEY,JSON.stringify(favs));
         if(cal) localStorage.setItem(CAL_KEY_LOCAL,JSON.stringify(cal));
-
-        alert('Import berhasil! Reload...');
-        location.reload();
-      }catch(err){
-        console.error(err);
-        alert('JSON tidak valid: '+err.message);
-      }
+        alert('Import berhasil! Reload...'); location.reload();
+      }catch(err){ console.error(err); alert('JSON tidak valid: '+err.message); }
     };
     reader.readAsText(file);
   }
   function createTopLeftIcons(){
+
     if(document.getElementById('portalIOFloat'))return true;
     const wrap=document.createElement('div');
     wrap.id='portalIOFloat';
@@ -4994,6 +5298,417 @@ setTimeout(()=>{ upgradeFavsStorage(); upgradeStoredBlocks(); enhanceImages(); }
       }
     }
   }, true);
+})();
+</script>
+
+
+<script>
+// === GRUP CEPAT - Slide 1 Grup, di bawah motiv, mirip Tautan Cepat ===
+(function(){
+  const GROUP_KEY = 'grup_cepat_slide_v2';
+  const ACTIVE_KEY = 'grup_cepat_slide_active_v2';
+  const PINNED_KEY = 'grup_cepat_slide_pinned_v2';
+
+  const defaultGroups = [
+    {
+      id:'g_stem',
+      title:'Stem',
+      links:[
+        {id:'l1', name:'Pencarian Pegawai', url:'#', icon:'bi-globe'},
+        {id:'l2', name:'Script MC Kunjungan', url:'#', icon:'bi-envelope'},
+        {id:'l3', name:'Layanan Kepegawaian', url:'#', icon:'bi-people'},
+        {id:'l4', name:'Kontak Kami2', url:'#', icon:'bi-telephone'}
+      ]
+    },
+    {
+      id:'g_kantor',
+      title:'Kantor',
+      links:[
+        {id:'l5', name:'Admin Web', url:'#', icon:'bi-globe'},
+        {id:'l6', name:'Portal Kemdik', url:'#', icon:'bi-mortarboard'},
+        {id:'l7', name:'Data Pegawai', url:'#', icon:'bi-file-text'}
+      ]
+    },
+    {
+      id:'g_publikasi',
+      title:'Publikasi',
+      links:[
+        {id:'l8', name:'List Kunjungan', url:'#', icon:'bi-journal-text'},
+        {id:'l9', name:'Lap Kegiatan', url:'#', icon:'bi-bar-chart'}
+      ]
+    }
+  ];
+
+  function loadGroups(){
+    try{
+      const raw = localStorage.getItem(GROUP_KEY);
+      if(raw){
+        const p = JSON.parse(raw);
+        if(Array.isArray(p) && p.length>0) return p;
+      }
+    }catch(e){}
+    return JSON.parse(JSON.stringify(defaultGroups));
+  }
+  function saveGroups(list){
+    try{ localStorage.setItem(GROUP_KEY, JSON.stringify(list)); }catch(e){}
+  }
+  function loadActive(){
+    try{ const v = localStorage.getItem(ACTIVE_KEY); if(v!==null) return parseInt(v,10)||0; }catch(e){}
+    return 0;
+  }
+  function saveActive(i){
+    try{ localStorage.setItem(ACTIVE_KEY, String(i)); }catch(e){}
+  }
+  function loadPinned(){
+    try{ return localStorage.getItem(PINNED_KEY)==='1'; }catch(e){ return false; }
+  }
+  function savePinned(b){
+    try{ localStorage.setItem(PINNED_KEY, b?'1':'0'); }catch(e){}
+  }
+
+  function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+  function createCard(){
+    const div = document.createElement('div');
+    div.id='grupCepatCard';
+    div.innerHTML = `
+      <div class="grup-header" id="grupHeader">
+        <div class="grup-header-left">
+          <i class="bi bi-collection" style="font-size:16px;color:#1e293b;flex-shrink:0"></i>
+          <div class="grup-title" id="grupTitle">Grup Cepat</div>
+          <button class="grup-edit-inline" id="grupEditTitleBtn" title="Edit nama grup"><i class="bi bi-pencil" style="font-size:11px"></i></button>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-left:auto;">
+          <button class="grup-header-btn" id="grupNextBtn" title="Grup berikutnya (slide)"><i class="bi bi-chevron-right" style="font-size:14px"></i></button>
+          <button class="grup-header-btn danger" id="grupDeleteBtn" title="Hapus grup ini"><i class="bi bi-trash" style="font-size:13px"></i></button>
+          <button class="grup-header-btn" id="grupAddBtn" title="Tambah grup baru"><i class="bi bi-plus-lg" style="font-size:14px"></i></button>
+        </div>
+      </div>
+      <div class="grup-links-wrapper" id="grupLinksWrapper">
+        <div class="grup-links-list" id="grupLinksList"></div>
+        <button class="grup-add-link" id="grupAddLinkBtn"><i class="bi bi-plus-lg"></i> Tambah tautan di grup ini</button>
+        <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:10.5px;color:#94a3b8;">Hover untuk lihat • Klik judul untuk pin</span>
+          <span id="grupIndicator" style="font-size:10.5px;color:#94a3b8;background:#f1f5f9;padding:2px 7px;border-radius:12px;">1 / 1</span>
+        </div>
+      </div>
+    `;
+    return div;
+  }
+
+  let activeIndex = loadActive();
+  let isPinned = loadPinned();
+
+  function mount(){
+    const motiv = document.getElementById('motivCard');
+    const sidebar = document.getElementById('portalSidebar');
+    if(!motiv || !sidebar) return false;
+    if(document.getElementById('grupCepatCard')){
+      if(motiv.nextSibling && motiv.nextSibling.id!=='grupCepatCard'){
+        sidebar.insertBefore(document.getElementById('grupCepatCard'), motiv.nextSibling);
+      }
+      return true;
+    }
+    const card = createCard();
+    if(isPinned) card.classList.add('is-pinned');
+    if(motiv.nextSibling){
+      sidebar.insertBefore(card, motiv.nextSibling);
+    }else{
+      sidebar.appendChild(card);
+    }
+    bind(card);
+    render();
+    return true;
+  }
+
+  function bind(card){
+    const header = card.querySelector('#grupHeader');
+    const nextBtn = card.querySelector('#grupNextBtn');
+    const delBtn = card.querySelector('#grupDeleteBtn');
+    const addBtn = card.querySelector('#grupAddBtn');
+    const addLinkBtn = card.querySelector('#grupAddLinkBtn');
+    const editTitleBtn = card.querySelector('#grupEditTitleBtn');
+
+    if(header){
+      header.addEventListener('click', function(e){
+        if(e.target.closest('button')) return;
+        isPinned = !isPinned;
+        savePinned(isPinned);
+        card.classList.toggle('is-pinned', isPinned);
+      });
+    }
+    if(editTitleBtn){
+      editTitleBtn.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        const groups = loadGroups();
+        const cur = groups[activeIndex];
+        openGroupModal(cur?cur.id:null);
+      });
+    }
+    if(nextBtn){
+      nextBtn.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        const groups = loadGroups();
+        if(groups.length<=1) return;
+        activeIndex = (activeIndex+1) % groups.length;
+        saveActive(activeIndex);
+        isPinned = false;
+        savePinned(false);
+        card.classList.remove('is-pinned');
+        render();
+      });
+    }
+    if(delBtn){
+      delBtn.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        const groups = loadGroups();
+        if(groups.length===0) return;
+        const cur = groups[activeIndex];
+        if(!cur) return;
+        if(!confirm('Hapus grup "'+cur.title+'" beserta semua link di dalamnya?')) return;
+        const newGroups = groups.filter((_,i)=>i!==activeIndex);
+        saveGroups(newGroups);
+        if(activeIndex>=newGroups.length) activeIndex = Math.max(0, newGroups.length-1);
+        saveActive(activeIndex);
+        isPinned = false;
+        savePinned(false);
+        card.classList.remove('is-pinned');
+        render();
+      });
+    }
+    if(addBtn){
+      addBtn.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        openGroupModal(null);
+      });
+    }
+    if(addLinkBtn){
+      addLinkBtn.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        const groups = loadGroups();
+        const cur = groups[activeIndex];
+        if(!cur){ alert('Buat grup dulu'); return; }
+        openLinkModal(null, cur.id);
+      });
+    }
+  }
+
+  function render(){
+    const card = document.getElementById('grupCepatCard');
+    const titleEl = document.getElementById('grupTitle');
+    const listEl = document.getElementById('grupLinksList');
+    const indicator = document.getElementById('grupIndicator');
+    if(!card || !titleEl || !listEl) return;
+    const groups = loadGroups();
+    if(activeIndex>=groups.length) activeIndex = 0;
+    if(groups.length===0){
+      titleEl.textContent = 'Grup Cepat';
+      listEl.innerHTML = `<div class="grup-empty"><i class="bi bi-collection" style="font-size:20px;display:block;margin-bottom:6px"></i>Belum ada grup.<br/>Klik + untuk buat grup baru.</div>`;
+      if(indicator) indicator.textContent = '0 / 0';
+      card.classList.remove('is-pinned');
+      isPinned = false;
+      savePinned(false);
+      return;
+    }
+    const cur = groups[activeIndex];
+    titleEl.textContent = cur.title;
+    if(indicator) indicator.textContent = (activeIndex+1)+' / '+groups.length;
+
+    if(!cur.links || cur.links.length===0){
+      listEl.innerHTML = `<div class="grup-empty">Belum ada tautan di grup ini.<br/>Klik "Tambah tautan" di bawah.</div>`;
+    }else{
+      listEl.innerHTML = cur.links.map(function(link){
+        const isExternal = /^https?:\/\//.test(link.url||'');
+        return `
+          <a class="grup-link-item" href="${link.url||'#'}" ${isExternal?'target="_blank" rel="noopener"':''} data-link-id="${link.id}">
+            <span class="grup-link-icon"><i class="bi ${link.icon||'bi-link-45deg'}" style="font-size:13px"></i></span>
+            <span class="grup-link-text">${link.name}</span>
+            <span class="grup-link-actions">
+              <button class="icon-mini link-edit-btn" title="Edit" data-link-id="${link.id}"><i class="bi bi-pencil" style="font-size:11px"></i></button>
+              <button class="icon-mini danger link-del-btn" title="Hapus" data-link-id="${link.id}"><i class="bi bi-trash" style="font-size:11px"></i></button>
+            </span>
+            <i class="bi bi-chevron-right grup-link-chevron"></i>
+          </a>
+        `;
+      }).join('');
+      listEl.querySelectorAll('.link-edit-btn').forEach(function(btn){
+        btn.addEventListener('click', function(e){
+          e.preventDefault(); e.stopPropagation();
+          const lid = btn.dataset.linkId;
+          const curId = groups[activeIndex].id;
+          openLinkModal(lid, curId);
+        });
+      });
+      listEl.querySelectorAll('.link-del-btn').forEach(function(btn){
+        btn.addEventListener('click', function(e){
+          e.preventDefault(); e.stopPropagation();
+          const lid = btn.dataset.linkId;
+          const curGroup = groups[activeIndex];
+          if(!confirm('Hapus link "'+(curGroup.links.find(l=>l.id===lid)?.name||'')+'"?')) return;
+          curGroup.links = curGroup.links.filter(l=>l.id!==lid);
+          saveGroups(groups);
+          render();
+        });
+      });
+    }
+    if(isPinned) card.classList.add('is-pinned'); else card.classList.remove('is-pinned');
+  }
+
+  function closeModal(){
+    const el = document.getElementById('grupModalOverlay');
+    if(el) el.remove();
+  }
+
+  function openGroupModal(gid){
+    closeModal();
+    const groups = loadGroups();
+    const isNew = !gid;
+    const g = isNew ? {id:'g_'+Date.now(), title:''} : groups.find(x=>x.id===gid);
+    if(!g && !isNew) return;
+    const overlay = document.createElement('div');
+    overlay.className='grup-modal-overlay';
+    overlay.id='grupModalOverlay';
+    overlay.addEventListener('click', function(e){ if(e.target===overlay) closeModal(); });
+    overlay.innerHTML = `
+      <div class="grup-modal">
+        <div class="grup-modal-title">
+          <span>${isNew?'Tambah Grup Baru':'Edit Grup'}</span>
+          <button class="grup-header-btn" id="modalCloseX"><i class="bi bi-x-lg" style="font-size:12px"></i></button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <label style="font-size:12px;color:#475569;">Nama Grup
+            <input class="grup-input" id="grupNameInput" type="text" placeholder="Contoh: Stem, Kantor, Publikasi..." maxlength="40" value="${(g?g.title:'').replace(/"/g,'&quot;')}" style="margin-top:6px;">
+          </label>
+        </div>
+        <div class="grup-modal-actions">
+          <button class="btn-secondary" id="modalCancel">Batal</button>
+          <button class="btn-primary" id="modalSave">${isNew?'Tambah Grup':'Simpan'}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    const inp = overlay.querySelector('#grupNameInput');
+    setTimeout(()=>{ inp.focus(); inp.select(); }, 60);
+    function doSave(){
+      const name = inp.value.trim();
+      if(!name){ alert('Nama grup tidak boleh kosong'); inp.focus(); return; }
+      if(isNew){
+        const newG = {id:'g_'+Date.now()+'_'+Math.random().toString(36).slice(2,5), title:name, links:[]};
+        groups.push(newG);
+        activeIndex = groups.length-1;
+        saveActive(activeIndex);
+      }else{
+        const idx = groups.findIndex(x=>x.id===gid);
+        if(idx!==-1) groups[idx].title = name;
+      }
+      saveGroups(groups);
+      closeModal();
+      render();
+    }
+    overlay.querySelector('#modalSave').addEventListener('click', doSave);
+    overlay.querySelector('#modalCancel').addEventListener('click', closeModal);
+    overlay.querySelector('#modalCloseX').addEventListener('click', closeModal);
+    inp.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); doSave(); } if(e.key==='Escape') closeModal(); });
+  }
+
+  function openLinkModal(lid, gid){
+    closeModal();
+    const groups = loadGroups();
+    const gIdx = groups.findIndex(x=>x.id===gid);
+    if(gIdx===-1) return;
+    const g = groups[gIdx];
+    const isNew = !lid;
+    const link = isNew ? {id:'l_'+Date.now(), name:'', url:'', icon:'bi-link-45deg'} : g.links.find(l=>l.id===lid);
+    if(!link && !isNew) return;
+
+    const icons = ['bi-globe','bi-link-45deg','bi-search','bi-envelope','bi-people','bi-telephone','bi-mortarboard','bi-file-text','bi-journal-text','bi-bar-chart','bi-calendar-event','bi-box-seam','bi-lightbulb','bi-star','bi-house','bi-gear'];
+    const iconOpts = icons.map(ic=>`<option value="${ic}" ${ic===(link.icon||'bi-link-45deg')?'selected':''}>${ic}</option>`).join('');
+
+    const overlay = document.createElement('div');
+    overlay.className='grup-modal-overlay';
+    overlay.id='grupModalOverlay';
+    overlay.addEventListener('click', function(e){ if(e.target===overlay) closeModal(); });
+    overlay.innerHTML = `
+      <div class="grup-modal">
+        <div class="grup-modal-title">
+          <span>${isNew?'Tambah Tautan di '+g.title:'Edit Tautan'}</span>
+          <button class="grup-header-btn" id="modalCloseX"><i class="bi bi-x-lg" style="font-size:12px"></i></button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <label style="font-size:12px;color:#475569;">Nama Link
+            <input class="grup-input" id="linkNameInput" type="text" placeholder="Contoh: Pencarian Pegawai" maxlength="60" value="${(link.name||'').replace(/"/g,'&quot;')}" style="margin-top:6px;">
+          </label>
+          <label style="font-size:12px;color:#475569;">URL / Link
+            <input class="grup-input" id="linkUrlInput" type="text" placeholder="https://... atau /halaman atau #" maxlength="500" value="${(link.url||'').replace(/"/g,'&quot;')}" style="margin-top:6px;">
+          </label>
+          <label style="font-size:12px;color:#475569;">Icon
+            <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+              <div id="linkIconPrev" style="width:36px;height:36px;border-radius:50%;background:#f1f5f9;display:grid;place-items:center;"><i class="bi ${link.icon||'bi-link-45deg'}"></i></div>
+              <select class="grup-input" id="linkIconInput" style="flex:1;">${iconOpts}</select>
+            </div>
+          </label>
+        </div>
+        <div class="grup-modal-actions">
+          <button class="btn-secondary" id="modalCancel">Batal</button>
+          <button class="btn-primary" id="modalSave">${isNew?'Tambah':'Simpan'}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    const nameInp = overlay.querySelector('#linkNameInput');
+    const urlInp = overlay.querySelector('#linkUrlInput');
+    const iconInp = overlay.querySelector('#linkIconInput');
+    const prev = overlay.querySelector('#linkIconPrev');
+    setTimeout(()=>{ nameInp.focus(); if(!isNew) nameInp.select(); }, 60);
+    function updPrev(){ if(prev && iconInp) prev.innerHTML = '<i class="bi '+iconInp.value+'"></i>'; }
+    if(iconInp) iconInp.addEventListener('change', updPrev);
+
+    function doSaveLink(){
+      const nm = nameInp.value.trim();
+      let u = urlInp.value.trim();
+      const ic = iconInp ? iconInp.value : 'bi-link-45deg';
+      if(!nm){ alert('Nama link wajib diisi'); nameInp.focus(); return; }
+      if(!u) u='#';
+      if(/^\s*javascript:/i.test(u)){ alert('URL tidak boleh javascript:'); return; }
+      if(isNew){
+        g.links.push({id:'l_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), name:nm, url:u, icon:ic});
+      }else{
+        const idx = g.links.findIndex(x=>x.id===lid);
+        if(idx!==-1) g.links[idx] = {id:lid, name:nm, url:u, icon:ic};
+      }
+      groups[gIdx]=g;
+      saveGroups(groups);
+      closeModal();
+      render();
+      isPinned = true;
+      savePinned(true);
+      const card = document.getElementById('grupCepatCard');
+      if(card) card.classList.add('is-pinned');
+    }
+
+    overlay.querySelector('#modalSave').addEventListener('click', doSaveLink);
+    overlay.querySelector('#modalCancel').addEventListener('click', closeModal);
+    overlay.querySelector('#modalCloseX').addEventListener('click', closeModal);
+    nameInp.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); urlInp.focus(); } if(e.key==='Escape') closeModal(); });
+    urlInp.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); doSaveLink(); } if(e.key==='Escape') closeModal(); });
+  }
+
+  let tries=0;
+  const iv = setInterval(function(){
+    tries++;
+    if(mount()){
+      clearInterval(iv);
+    }
+    if(tries>80) clearInterval(iv);
+  }, 250);
+
+  const obs = new MutationObserver(function(){
+    if(!document.getElementById('grupCepatCard') && document.getElementById('motivCard')){
+      mount();
+    }
+  });
+  obs.observe(document.body, {childList:true, subtree:true});
+
 })();
 </script>
 
